@@ -1,4 +1,4 @@
--- Troškovnik: Supabase schema.
+-- Troškovi: Supabase schema.
 -- Run once in Supabase: SQL Editor -> New query -> paste -> Run. Safe to run again.
 --
 -- There is no login: the anon key in config.js can read and write everything.

@@ -1,4 +1,4 @@
-# Troškovnik
+# Troškovi
 
 Personal expense dashboard: expenses with categories and payment methods, subscriptions, filtering and sorting, and weekly/monthly recaps.
 
