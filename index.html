@@ -83,7 +83,7 @@ h1, h2, h3 { font-family: var(--f-display); margin: 0; text-wrap: balance; lette
 .top-row .spacer { flex: 1; }
 .mode { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 .mode i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); display: inline-block; }
-.mode.db i { background: var(--good); }
+.mode.db i, .mode.sb i { background: var(--good); }
 .mode.local i { background: var(--warn); }
 
 .tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding-bottom: 8px; }
@@ -331,6 +331,8 @@ dialog::backdrop { background: rgba(10, 14, 24, .45); }
 <dialog id="dlg"></dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 (() => {
 "use strict";
@@ -373,7 +375,7 @@ const S = {
 try { const t = localStorage.getItem("troskovnik-tab"); if (t) S.tab = t; } catch (e) {}
 try { const r = JSON.parse(localStorage.getItem("troskovnik-recap") || "null"); if (r && r.type) S.recap.type = r.type; } catch (e) {}
 
-let DB = null, DL = null;
+let DB = null, DL = null, SB = null;
 
 /* ---------- Helpers ---------- */
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
@@ -463,8 +465,63 @@ const LKEY = "troskovnik-v1";
 function localSave() {
   try { localStorage.setItem(LKEY, JSON.stringify({ expenses: S.expenses, subs: S.subs, config: S.config })); } catch (e) {}
 }
+function localRead() {
+  try { const raw = localStorage.getItem(LKEY); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
+}
 function localLoad() {
-  try { const raw = localStorage.getItem(LKEY); if (raw) { const d = JSON.parse(raw); S.expenses = d.expenses || []; S.subs = d.subs || []; if (d.config) S.config = d.config; } } catch (e) {}
+  const d = localRead();
+  if (d) { S.expenses = d.expenses || []; S.subs = d.subs || []; if (d.config) S.config = d.config; }
+}
+
+/* Supabase rows use snake_case columns; the app uses camelCase objects */
+const SBCFG = window.TROSKOVNIK_CONFIG || {};
+function sbConfigured() {
+  return !!(SBCFG.supabaseUrl && SBCFG.supabaseAnonKey && window.supabase && typeof window.supabase.createClient === "function");
+}
+const toRowE = e => ({ id: e.id, title: e.title || "", amount: Number(e.amount) || 0, date: e.date, category: e.category || "", method: e.method || "", note: e.note || "", sub_id: e.subId || null, example: !!e.example, created_at: e.createdAt || Date.now() });
+function fromRowE(r) {
+  const e = { id: r.id, title: r.title || "", amount: Number(r.amount) || 0, date: r.date, category: r.category || "", method: r.method || "", note: r.note || "", createdAt: Number(r.created_at) || 0 };
+  if (r.sub_id) e.subId = r.sub_id;
+  if (r.example) e.example = true;
+  return e;
+}
+const toRowS = s => ({ id: s.id, name: s.name, amount: Number(s.amount) || 0, cycle: s.cycle || "mesecno", next_date: s.nextDate || null, category: s.category || "", method: s.method || "", active: s.active !== false, example: !!s.example, created_at: s.createdAt || Date.now() });
+function fromRowS(r) {
+  const s = { id: r.id, name: r.name, amount: Number(r.amount) || 0, cycle: r.cycle || "mesecno", nextDate: r.next_date || "", category: r.category || "", method: r.method || "", active: r.active !== false, createdAt: Number(r.created_at) || 0 };
+  if (r.example) s.example = true;
+  return s;
+}
+async function sbRun(q) { const { data, error } = await q; if (error) throw error; return data; }
+async function sbFetchAll(table) {
+  const out = [], page = 1000;
+  for (let from = 0; ; from += page) {
+    const rows = await sbRun(SB.from(table).select("*").range(from, from + page - 1));
+    out.push(...rows);
+    if (rows.length < page) return out;
+  }
+}
+async function sbLoadAll() {
+  const [ex, sx, cfg] = await Promise.all([
+    sbFetchAll("expenses"),
+    sbFetchAll("subs"),
+    sbRun(SB.from("config").select("data").eq("id", "main").maybeSingle())
+  ]);
+  S.expenses = ex.map(fromRowE);
+  S.subs = sx.map(fromRowS);
+  if (cfg && cfg.data && Object.keys(cfg.data).length) S.config = { ...clone(DEFAULT_CONFIG), ...cfg.data };
+}
+function sbFailed(err) {
+  console.error(err);
+  toast("Čuvanje u bazu nije uspelo" + (err && err.message ? ": " + err.message : ". Proveri internet i pokušaj ponovo."));
+}
+function sbApplyChange(p) {
+  const removed = p.eventType === "DELETE";
+  const row = removed ? p.old : p.new;
+  if (!row || !row.id) return;
+  if (p.table === "expenses") { if (removed) S.expenses = S.expenses.filter(x => x.id !== row.id); else upsert(S.expenses, fromRowE(row)); }
+  else if (p.table === "subs") { if (removed) S.subs = S.subs.filter(x => x.id !== row.id); else upsert(S.subs, fromRowS(row)); }
+  else if (p.table === "config" && !removed && row.id === "main" && row.data) S.config = { ...clone(DEFAULT_CONFIG), ...row.data };
+  refresh();
 }
 function strip(o) { const { id, ...rest } = o; return rest; }
 function upsert(arr, item) { const i = arr.findIndex(x => x.id === item.id); if (i >= 0) arr[i] = item; else arr.push(item); }
@@ -486,28 +543,67 @@ async function retryOnce(fn) {
 const store = {
   async putExpense(e) {
     if (DB) { try { await retryOnce(() => DB.collection("expenses").doc(e.id).set(strip(e))); } catch (err) { failed(err); return false; } }
+    else if (SB) { try { await sbRun(SB.from("expenses").upsert(toRowE(e))); } catch (err) { sbFailed(err); return false; } upsert(S.expenses, e); refresh(); }
     else { upsert(S.expenses, e); localSave(); refresh(); }
     return true;
   },
   async delExpense(id) {
     if (DB) { try { await retryOnce(() => DB.collection("expenses").doc(id).delete()); } catch (err) { failed(err); return false; } }
+    else if (SB) { try { await sbRun(SB.from("expenses").delete().eq("id", id)); } catch (err) { sbFailed(err); return false; } S.expenses = S.expenses.filter(x => x.id !== id); refresh(); }
     else { S.expenses = S.expenses.filter(x => x.id !== id); localSave(); refresh(); }
     return true;
   },
   async putSub(s) {
     if (DB) { try { await retryOnce(() => DB.collection("subs").doc(s.id).set(strip(s))); } catch (err) { failed(err); return false; } }
+    else if (SB) { try { await sbRun(SB.from("subs").upsert(toRowS(s))); } catch (err) { sbFailed(err); return false; } upsert(S.subs, s); refresh(); }
     else { upsert(S.subs, s); localSave(); refresh(); }
     return true;
   },
   async delSub(id) {
     if (DB) { try { await retryOnce(() => DB.collection("subs").doc(id).delete()); } catch (err) { failed(err); return false; } }
+    else if (SB) { try { await sbRun(SB.from("subs").delete().eq("id", id)); } catch (err) { sbFailed(err); return false; } S.subs = S.subs.filter(x => x.id !== id); refresh(); }
     else { S.subs = S.subs.filter(x => x.id !== id); localSave(); refresh(); }
     return true;
   },
   async saveConfig(cfg) {
     S.config = cfg;
     if (DB) { try { await retryOnce(() => DB.doc("meta/config").set(clone(cfg))); } catch (err) { failed(err); return false; } }
+    else if (SB) { try { await sbRun(SB.from("config").upsert({ id: "main", data: clone(cfg) })); } catch (err) { sbFailed(err); return false; } }
     else { localSave(); }
+    refresh();
+    return true;
+  },
+  /* Many rows at once: example data and the one-time import from this browser */
+  async putMany(expenses, subs) {
+    if (SB) {
+      try {
+        if (expenses.length) await sbRun(SB.from("expenses").upsert(expenses.map(toRowE)));
+        if (subs.length) await sbRun(SB.from("subs").upsert(subs.map(toRowS)));
+      } catch (err) { sbFailed(err); return false; }
+      expenses.forEach(e => upsert(S.expenses, e)); subs.forEach(s => upsert(S.subs, s));
+    } else if (DB) {
+      for (const e of expenses) if (!(await store.putExpense(e))) return false;
+      for (const s of subs) if (!(await store.putSub(s))) return false;
+      return true;
+    } else {
+      expenses.forEach(e => upsert(S.expenses, e)); subs.forEach(s => upsert(S.subs, s)); localSave();
+    }
+    refresh();
+    return true;
+  },
+  async clearExamples() {
+    if (SB) {
+      try {
+        await sbRun(SB.from("expenses").delete().eq("example", true));
+        await sbRun(SB.from("subs").delete().eq("example", true));
+      } catch (err) { sbFailed(err); return false; }
+    } else if (DB) {
+      for (const e of S.expenses.filter(x => x.example)) await store.delExpense(e.id);
+      for (const s of S.subs.filter(x => x.example)) await store.delSub(s.id);
+      return true;
+    }
+    S.expenses = S.expenses.filter(e => !e.example); S.subs = S.subs.filter(s => !s.example);
+    if (!SB) localSave();
     refresh();
     return true;
   }
@@ -532,6 +628,39 @@ async function boot() {
       if (snap.exists) { const d = snap.data(); S.config = { ...clone(DEFAULT_CONFIG), ...clone(d) }; }
       ready();
     }, onErr);
+  } else if (sbConfigured()) {
+    SB = window.supabase.createClient(SBCFG.supabaseUrl, SBCFG.supabaseAnonKey, { auth: { persistSession: false } });
+    try {
+      await sbLoadAll();
+    } catch (err) {
+      console.error(err);
+      SB = null;
+      S.mode = "local";
+      localLoad();
+      renderTab();
+      setMode();
+      toast("Baza nije dostupna, prikazujem podatke iz ovog browsera. Proveri config.js i schema.sql.");
+      return;
+    }
+    S.mode = "sb";
+    // Data entered here before Supabase was set up can be moved into the database once
+    const old = localRead();
+    if (old) {
+      const ids = new Set(S.expenses.map(e => e.id)), sids = new Set(S.subs.map(s => s.id));
+      const ex = (old.expenses || []).filter(e => !ids.has(e.id)), sx = (old.subs || []).filter(s => !sids.has(s.id));
+      if (ex.length || sx.length) S.pendingImport = { expenses: ex, subs: sx };
+    }
+    renderTab();
+    SB.channel("troskovnik")
+      .on("postgres_changes", { event: "*", schema: "public" }, sbApplyChange)
+      .subscribe();
+    // Backup for missed realtime events: reload when the tab comes back into view
+    let lastSync = Date.now();
+    document.addEventListener("visibilitychange", async () => {
+      if (document.visibilityState !== "visible" || Date.now() - lastSync < 15000) return;
+      lastSync = Date.now();
+      try { await sbLoadAll(); refresh(); } catch (err) { console.error(err); }
+    });
   } else {
     S.mode = "local";
     localLoad();
@@ -543,8 +672,10 @@ async function boot() {
 function setMode() {
   const m = $("#mode");
   m.className = "mode " + S.mode;
-  $("span", m).textContent = S.mode === "db" ? "Sačuvano u oblaku" : S.mode === "local" ? "Sačuvano u ovom browseru" : "";
-  m.title = S.mode === "db" ? "Podaci se čuvaju uz ovaj artifact i vidiš ih sa svakog uređaja." : "Podaci se čuvaju samo u ovom browseru na ovom uređaju.";
+  $("span", m).textContent = S.mode === "db" ? "Sačuvano u oblaku" : S.mode === "sb" ? "Sačuvano u bazi" : S.mode === "local" ? "Sačuvano u ovom browseru" : "";
+  m.title = S.mode === "db" ? "Podaci se čuvaju uz ovaj artifact i vidiš ih sa svakog uređaja."
+    : S.mode === "sb" ? "Podaci se čuvaju u Supabase bazi i vidiš ih sa svakog uređaja."
+    : "Podaci se čuvaju samo u ovom browseru na ovom uređaju.";
 }
 
 /* ---------- Toast ---------- */
@@ -670,15 +801,23 @@ function exampleBanner() {
 }
 async function clearExamples(btn) {
   if (btn && !btn.classList.contains("armed")) { btn.classList.add("armed", "danger"); btn.textContent = "Klikni ponovo za brisanje"; return; }
-  const ex = S.expenses.filter(e => e.example), sx = S.subs.filter(s => s.example);
   if (btn) { btn.disabled = true; btn.textContent = "Brišem…"; }
-  if (DB) {
-    for (const e of ex) await store.delExpense(e.id);
-    for (const s of sx) await store.delSub(s.id);
-  } else {
-    S.expenses = S.expenses.filter(e => !e.example); S.subs = S.subs.filter(s => !s.example); localSave(); refresh();
-  }
-  toast("Primeri su obrisani.");
+  if (await store.clearExamples()) toast("Primeri su obrisani.");
+}
+function importBanner() {
+  const p = S.pendingImport;
+  if (!p) return "";
+  const n = p.expenses.length;
+  return `<div class="banner info"><p>U ovom browseru su sačuvani stari podaci: <b>${n} ${n === 1 ? "trošak" : "troškova"}</b>${p.subs.length ? ` i ${p.subs.length} ${p.subs.length === 1 ? "pretplata" : "pretplata"}` : ""}. Prebaci ih u bazu da ih vidiš i na drugim uređajima.</p><button class="btn sm primary" type="button" data-act="import-local">Prebaci u bazu</button><button class="btn sm ghost" type="button" data-act="skip-import">Ne treba</button></div>`;
+}
+async function importLocal(btn) {
+  const p = S.pendingImport; if (!p) return;
+  btn.disabled = true; btn.textContent = "Prebacujem…";
+  if (!(await store.putMany(p.expenses, p.subs))) { btn.disabled = false; btn.textContent = "Prebaci u bazu"; return; }
+  S.pendingImport = null;
+  try { localStorage.removeItem(LKEY); } catch (e) {}
+  refresh();
+  toast("Podaci su prebačeni u bazu.");
 }
 function dueSubs() { const t = today(); return S.subs.filter(s => s.active !== false && s.nextDate && s.nextDate <= t).sort((a, b) => a.nextDate.localeCompare(b.nextDate)); }
 function dueBanner() {
@@ -707,7 +846,9 @@ document.addEventListener("click", async e => {
   else if (act === "add-expense") openExpense();
   else if (act === "add-sub") openSub();
   else if (act === "go") { S.tab = a.dataset.tab; renderTab(); }
-  else if (act === "load-examples") loadLocalExamples();
+  else if (act === "load-examples") { a.disabled = true; loadExamples(); }
+  else if (act === "import-local") importLocal(a);
+  else if (act === "skip-import") { S.pendingImport = null; try { localStorage.removeItem(LKEY); } catch (err) {} refresh(); }
 });
 
 /* ---------- View: Pregled ---------- */
@@ -728,11 +869,11 @@ VIEWS.pregled = {
   update(v) {
     const t = today();
     if (!S.expenses.length && !S.subs.length) {
-      v.innerHTML = `<section class="panel">${emptyHTML()}</section>`;
+      v.innerHTML = importBanner() + `<section class="panel">${emptyHTML()}</section>`;
       return;
     }
     if (!$("#ov-kpis", v)) this.shell(v);
-    $("#ov-banners", v).innerHTML = exampleBanner() + dueBanner();
+    $("#ov-banners", v).innerHTML = importBanner() + exampleBanner() + dueBanner();
 
     const ms = monthStart(t), me = monthEnd(t);
     const dayN = parseD(t).getDate();
@@ -797,7 +938,7 @@ function emptyHTML() {
     <p>Dodaj prvi trošak: iznos, na šta je otišao novac i čime je plaćeno. Pretplate dodaj u kartici Pretplate, pa ih beležiš jednim klikom kad stignu.</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
       <button class="btn primary" type="button" data-act="add-expense">Dodaj prvi trošak</button>
-      ${S.mode === "local" ? `<button class="btn" type="button" data-act="load-examples">Učitaj primere</button>` : ""}
+      ${S.mode !== "db" ? `<button class="btn" type="button" data-act="load-examples">Učitaj primere</button>` : ""}
     </div>
   </div>`;
 }
@@ -1220,9 +1361,10 @@ VIEWS.podesavanja = {
       <span class="count">${um.get(m.id) || 0}×</span>
       <button class="btn sm ghost danger" type="button" data-del>Obriši</button></div>`).join("");
     const cur = $("#st-cur", v); if (document.activeElement !== cur) cur.value = S.config.currency;
-    $("#st-where", v).textContent = S.mode === "db"
-      ? `Troškovi se čuvaju uz ovu stranicu i vidiš ih sa svakog uređaja. Ukupno: ${S.expenses.length} troškova, ${S.subs.length} pretplata.`
-      : `Troškovi se čuvaju samo u ovom browseru. Ukupno: ${S.expenses.length} troškova, ${S.subs.length} pretplata.`;
+    const counts = `Ukupno: ${S.expenses.length} troškova, ${S.subs.length} pretplata.`;
+    $("#st-where", v).textContent = S.mode === "db" ? `Troškovi se čuvaju uz ovu stranicu i vidiš ih sa svakog uređaja. ${counts}`
+      : S.mode === "sb" ? `Troškovi se čuvaju u Supabase bazi i vidiš ih sa svakog uređaja. ${counts}`
+      : `Troškovi se čuvaju samo u ovom browseru. Za čuvanje u bazi upiši Supabase podatke u config.js. ${counts}`;
   }
 };
 
@@ -1348,8 +1490,8 @@ function openSub(s) {
   });
 }
 
-/* ---------- Local examples (only when running outside the artifact viewer) ---------- */
-function loadLocalExamples() {
+/* ---------- Example data (outside the artifact viewer) ---------- */
+async function loadExamples() {
   const t = today();
   const rows = [
     [0, 900, "Termin mali fudbal", "fudbal", "gotovina"], [-1, 1450, "Pica sa društvom", "izlazak", "debitna"], [-1, 320, "Gradski prevoz", "prevoz", "telefon"],
@@ -1364,14 +1506,13 @@ function loadLocalExamples() {
     [-110, 2500, "Leto, izlazak", "izlazak", "gotovina"], [-125, 1600, "Hrana", "hrana", "debitna"], [-140, 900, "Termin mali fudbal", "fudbal", "gotovina"]
   ];
   let n = 0;
-  S.expenses = rows.map(([d, amount, title, category, method]) => ({ id: uid(), date: addDays(t, d), amount, title, category, method, note: "", example: true, createdAt: Date.now() - (n++) * 1000 }));
-  S.subs = [
+  const expenses = rows.map(([d, amount, title, category, method]) => ({ id: uid(), date: addDays(t, d), amount, title, category, method, note: "", example: true, createdAt: Date.now() - (n++) * 1000 }));
+  const subs = [
     { id: uid(), name: "Spotify", amount: 599, cycle: "mesecno", nextDate: addDays(t, 3), category: "pretplate", method: "debitna", active: true, example: true },
     { id: uid(), name: "Članarina fudbal", amount: 3000, cycle: "mesecno", nextDate: addDays(t, -1), category: "fudbal", method: "gotovina", active: true, example: true },
     { id: uid(), name: "iCloud 50 GB", amount: 119, cycle: "mesecno", nextDate: addDays(t, 12), category: "pretplate", method: "kreditna", active: true, example: true }
   ];
-  localSave();
-  renderTab();
+  if (await store.putMany(expenses, subs)) renderTab();
 }
 
 boot();
