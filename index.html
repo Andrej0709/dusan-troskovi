@@ -10,23 +10,23 @@
 <style>
 /* Layout: sticky header + tab bar, one centered work column; each tab is a grid of panels that collapses to one column on phones. */
 :root {
-  --bg: #EDF0F5;
+  --bg: #F0F0F0;
   --surface: #FFFFFF;
-  --surface-2: #F5F7FB;
-  --line: #DAE0EA;
-  --ink: #131A29;
-  --ink-2: #47526A;
-  --muted: #78839A;
-  --accent: #2C46D9;
+  --surface-2: #F5F5F5;
+  --line: #E0E0E0;
+  --ink: #0A0A0A;
+  --ink-2: #4A4A4A;
+  --muted: #7A7A7A;
+  --accent: #0A0A0A;
   --accent-ink: #FFFFFF;
-  --accent-soft: #E2E7FD;
+  --accent-soft: #E8E8E8;
   --good: #1D8556;
   --good-soft: #DDF2E8;
   --warn: #A86A12;
   --warn-soft: #FBEFD9;
   --bad: #C13434;
   --bad-soft: #FBE3E3;
-  --shadow: 0 1px 2px rgba(19, 26, 41, .06), 0 6px 20px rgba(19, 26, 41, .05);
+  --shadow: 0 1px 2px rgba(0, 0, 0, .06), 0 6px 20px rgba(0, 0, 0, .05);
   --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --f-body: "Manrope", "Segoe UI", system-ui, sans-serif;
   --r: 14px;
@@ -34,9 +34,9 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0D121C; --surface: #151C29; --surface-2: #1B2333; --line: #283247;
-    --ink: #E7EBF3; --ink-2: #B1BACB; --muted: #7C879B;
-    --accent: #8197FF; --accent-ink: #0D121C; --accent-soft: #212C50;
+    --bg: #000000; --surface: #0E0E0E; --surface-2: #181818; --line: #262626;
+    --ink: #F2F2F2; --ink-2: #B5B5B5; --muted: #808080;
+    --accent: #FFFFFF; --accent-ink: #000000; --accent-soft: #222222;
     --good: #4CC38A; --good-soft: #15332A; --warn: #E3AA4E; --warn-soft: #362A15;
     --bad: #F27474; --bad-soft: #3A1C1F;
     --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.25);
@@ -44,9 +44,9 @@
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0D121C; --surface: #151C29; --surface-2: #1B2333; --line: #283247;
-  --ink: #E7EBF3; --ink-2: #B1BACB; --muted: #7C879B;
-  --accent: #8197FF; --accent-ink: #0D121C; --accent-soft: #212C50;
+  --bg: #000000; --surface: #0E0E0E; --surface-2: #181818; --line: #262626;
+  --ink: #F2F2F2; --ink-2: #B5B5B5; --muted: #808080;
+  --accent: #FFFFFF; --accent-ink: #000000; --accent-soft: #222222;
   --good: #4CC38A; --good-soft: #15332A; --warn: #E3AA4E; --warn-soft: #362A15;
   --bad: #F27474; --bad-soft: #3A1C1F;
   --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.25);
@@ -276,7 +276,7 @@ main { padding-block: 20px 60px; }
 
 /* Dialog */
 dialog { border: 1px solid var(--line); border-radius: 18px; padding: 0; width: min(520px, calc(100vw - 24px)); background: var(--surface); color: var(--ink); box-shadow: 0 20px 60px rgba(0,0,0,.25); }
-dialog::backdrop { background: rgba(10, 14, 24, .45); }
+dialog::backdrop { background: rgba(0, 0, 0, .55); }
 .dlg { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
 .dlg h2 { font-size: 20px; }
 .dlg .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
