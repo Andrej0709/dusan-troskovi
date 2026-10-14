@@ -1,0 +1,1381 @@
+<!doctype html>
+<html lang="sr-Latn">
+<head>
+<meta charset="utf-8">
+<title>Troškovnik</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: sticky header + tab bar, one centered work column; each tab is a grid of panels that collapses to one column on phones. */
+:root {
+  --bg: #EDF0F5;
+  --surface: #FFFFFF;
+  --surface-2: #F5F7FB;
+  --line: #DAE0EA;
+  --ink: #131A29;
+  --ink-2: #47526A;
+  --muted: #78839A;
+  --accent: #2C46D9;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #E2E7FD;
+  --good: #1D8556;
+  --good-soft: #DDF2E8;
+  --warn: #A86A12;
+  --warn-soft: #FBEFD9;
+  --bad: #C13434;
+  --bad-soft: #FBE3E3;
+  --shadow: 0 1px 2px rgba(19, 26, 41, .06), 0 6px 20px rgba(19, 26, 41, .05);
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --r: 14px;
+  --r-sm: 9px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D121C; --surface: #151C29; --surface-2: #1B2333; --line: #283247;
+    --ink: #E7EBF3; --ink-2: #B1BACB; --muted: #7C879B;
+    --accent: #8197FF; --accent-ink: #0D121C; --accent-soft: #212C50;
+    --good: #4CC38A; --good-soft: #15332A; --warn: #E3AA4E; --warn-soft: #362A15;
+    --bad: #F27474; --bad-soft: #3A1C1F;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.25);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0D121C; --surface: #151C29; --surface-2: #1B2333; --line: #283247;
+  --ink: #E7EBF3; --ink-2: #B1BACB; --muted: #7C879B;
+  --accent: #8197FF; --accent-ink: #0D121C; --accent-soft: #212C50;
+  --good: #4CC38A; --good-soft: #15332A; --warn: #E3AA4E; --warn-soft: #362A15;
+  --bad: #F27474; --bad-soft: #3A1C1F;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.25);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 500 14px/1.5 var(--f-body);
+  font-variant-numeric: tabular-nums;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+h1, h2, h3 { font-family: var(--f-display); margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 16px; }
+
+/* Header */
+.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.top-row { display: flex; align-items: center; gap: 12px; padding-block: 12px 8px; }
+.brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.brand h1 { font-size: 24px; font-weight: 800; }
+.brand .sub { color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top-row .spacer { flex: 1; }
+.mode { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.mode i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); display: inline-block; }
+.mode.db i { background: var(--good); }
+.mode.local i { background: var(--warn); }
+
+.tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding-bottom: 8px; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  border: 0; background: transparent; padding: 7px 13px; border-radius: 999px;
+  color: var(--ink-2); font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.tab:hover { background: var(--surface-2); }
+.tab[aria-selected="true"] { background: var(--ink); color: var(--bg); }
+
+/* Buttons and inputs */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; justify-content: center;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  padding: 8px 14px; border-radius: var(--r-sm); font-weight: 600; cursor: pointer;
+  white-space: nowrap; transition: background .15s, border-color .15s, transform .1s;
+}
+.btn:hover { border-color: var(--muted); }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.ghost { background: transparent; border-color: transparent; color: var(--ink-2); }
+.btn.ghost:hover { background: var(--surface-2); }
+.btn.danger { color: var(--bad); }
+.btn.danger.armed { background: var(--bad); border-color: var(--bad); color: #fff; }
+.btn.sm { padding: 5px 10px; font-size: 13px; }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
+.icon-btn { border: 0; background: transparent; color: var(--muted); cursor: pointer; padding: 6px; border-radius: 7px; line-height: 0; }
+.icon-btn:hover { background: var(--surface-2); color: var(--ink); }
+
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field > span { font-size: 12px; font-weight: 600; color: var(--ink-2); letter-spacing: .02em; }
+.input, select.input, textarea.input {
+  width: 100%; border: 1px solid var(--line); background: var(--surface);
+  border-radius: var(--r-sm); padding: 8px 10px; min-height: 38px;
+}
+.input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+textarea.input { resize: vertical; min-height: 64px; }
+
+/* Panels */
+main { padding-block: 20px 60px; }
+.view { display: grid; gap: 16px; }
+.panel {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r);
+  padding: 18px; min-width: 0; box-shadow: var(--shadow);
+}
+.panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.panel-head h2 { font-size: 17px; font-weight: 700; }
+.panel-head .hint { color: var(--muted); font-size: 12.5px; }
+.grid-2 { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 900px) { .grid-2, .grid-3 { grid-template-columns: minmax(0, 1fr); } }
+
+.eyebrow { font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+/* KPI tiles */
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 900px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; min-width: 0; box-shadow: var(--shadow); }
+.kpi.lead { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.kpi.lead .eyebrow { color: color-mix(in srgb, var(--bg) 65%, transparent); }
+.kpi .val { font-family: var(--f-display); font-size: clamp(22px, 3.2vw, 30px); font-weight: 800; letter-spacing: -.02em; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kpi .val small { font-size: .5em; font-weight: 600; margin-left: 3px; opacity: .7; }
+.kpi .meta { font-size: 12.5px; color: var(--muted); }
+.kpi.lead .meta { color: color-mix(in srgb, var(--bg) 70%, transparent); }
+
+.delta { display: inline-flex; align-items: center; gap: 3px; font-weight: 700; font-size: 12px; padding: 1px 7px; border-radius: 999px; }
+.delta.up { color: var(--bad); background: var(--bad-soft); }
+.delta.down { color: var(--good); background: var(--good-soft); }
+.delta.flat { color: var(--ink-2); background: var(--surface-2); }
+
+/* Banners */
+.banner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 16px; border-radius: var(--r); border: 1px solid; }
+.banner p { margin: 0; flex: 1; min-width: 220px; }
+.banner.warn { background: var(--warn-soft); border-color: color-mix(in srgb, var(--warn) 35%, transparent); color: var(--ink); }
+.banner.info { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
+
+/* Category bars */
+.bars { display: flex; flex-direction: column; gap: 11px; }
+.bar-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: baseline; }
+.bar-row .name { display: flex; align-items: center; gap: 8px; font-weight: 600; min-width: 0; }
+.bar-row .name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-row .amt { font-weight: 700; text-align: right; white-space: nowrap; }
+.bar-row .amt em { font-style: normal; color: var(--muted); font-weight: 600; font-size: 12px; margin-left: 6px; }
+.bar-track { grid-column: 1 / -1; height: 7px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 999px; transition: width .4s ease; }
+.dot { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px 2px 7px; border-radius: 999px; font-size: 12.5px; font-weight: 600; background: var(--surface-2); color: var(--ink-2); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.chip .dot { width: 8px; height: 8px; border-radius: 50%; }
+.tag { font-size: 11px; font-weight: 700; letter-spacing: .04em; padding: 1px 7px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.tag.warn { background: var(--warn-soft); color: var(--warn); }
+.tag.bad { background: var(--bad-soft); color: var(--bad); }
+.tag.muted { background: var(--surface-2); color: var(--muted); }
+
+/* Charts */
+.chart { width: 100%; height: auto; display: block; overflow: visible; }
+.chart text { fill: var(--muted); font: 600 11px var(--f-body); }
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.chart .total { fill: var(--ink-2); font-weight: 700; }
+.chart .cur { fill: var(--ink); font-weight: 800; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 12px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+/* Lists */
+.mini-list { display: flex; flex-direction: column; }
+.mini-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; padding: 9px 0; border-bottom: 1px solid var(--line); align-items: center; }
+.mini-item:last-child { border-bottom: 0; }
+.mini-item .t { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mini-item .s { grid-column: 1; font-size: 12px; color: var(--muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.mini-item .a { grid-row: 1 / span 2; grid-column: 2; font-weight: 700; text-align: right; white-space: nowrap; }
+
+/* Filter bar */
+.filters { display: grid; grid-template-columns: minmax(180px, 2fr) repeat(4, minmax(130px, 1fr)); gap: 10px; align-items: end; }
+.filters .range { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.filters-2 { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; margin-top: 10px; }
+.filters-2 .field { width: 150px; }
+@media (max-width: 1000px) { .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } .filters .search { grid-column: 1 / -1; } }
+@media (max-width: 480px) { .filters-2 .field { width: calc(50% - 5px); } }
+
+.summary-line { display: flex; align-items: center; gap: 10px 18px; flex-wrap: wrap; padding: 12px 0 4px; color: var(--ink-2); }
+.summary-line strong { color: var(--ink); font-family: var(--f-display); font-size: 18px; }
+
+/* Expense table */
+.tbl { display: flex; flex-direction: column; }
+.tr { display: grid; grid-template-columns: 96px minmax(0, 2fr) minmax(0, 1.1fr) minmax(0, 1.1fr) 120px 36px; gap: 12px; align-items: center; padding: 10px 6px; border-bottom: 1px solid var(--line); }
+.tr.head { padding-block: 6px; border-bottom: 1px solid var(--line); }
+.tr.head button { border: 0; background: none; padding: 4px 0; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); cursor: pointer; text-align: left; display: inline-flex; align-items: center; gap: 4px; }
+.tr.head button.on { color: var(--ink); }
+.tr.head .r, .tr .r { text-align: right; justify-content: flex-end; }
+.tr.body { cursor: pointer; border-radius: 8px; }
+.tr.body:hover { background: var(--surface-2); }
+.tr .date { color: var(--ink-2); font-size: 13px; }
+.tr .date b { display: block; color: var(--ink); font-weight: 700; font-size: 14px; }
+.tr .title { min-width: 0; }
+.tr .title div { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tr .title small { color: var(--muted); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.tr .amount { font-weight: 800; font-family: var(--f-display); font-size: 16px; text-align: right; white-space: nowrap; }
+.tr .method { color: var(--ink-2); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.day-sep { font-size: 12px; font-weight: 700; color: var(--muted); padding: 14px 6px 4px; letter-spacing: .03em; display: flex; justify-content: space-between; }
+@media (max-width: 760px) {
+  .tr.head { display: none; }
+  .tr { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; padding: 11px 4px; }
+  .tr .date { display: none; }
+  .tr .title { grid-column: 1; }
+  .tr .amount { grid-column: 2; grid-row: 1; }
+  .tr .cat, .tr .method { grid-row: 2; }
+  .tr .cat { grid-column: 1; }
+  .tr .method { grid-column: 2; text-align: right; }
+  .tr .act { display: none; }
+}
+
+/* Subscriptions */
+.subs { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.sub-card { border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; background: var(--surface); min-width: 0; }
+.sub-card.off { opacity: .55; }
+.sub-card .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sub-card h3 { font-size: 16px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sub-card .price { font-family: var(--f-display); font-size: 24px; font-weight: 800; letter-spacing: -.02em; }
+.sub-card .price small { font-size: 13px; color: var(--muted); font-weight: 600; font-family: var(--f-body); }
+.sub-card .next { font-size: 13px; color: var(--ink-2); }
+.sub-card .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Recap */
+.recap-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.seg button { border: 0; background: transparent; padding: 6px 14px; border-radius: 999px; font-weight: 600; cursor: pointer; color: var(--ink-2); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+.period-nav { display: inline-flex; align-items: center; gap: 4px; }
+.period-label { font-family: var(--f-display); font-weight: 700; font-size: 18px; min-width: 0; padding-inline: 6px; }
+.story { font-size: 16px; line-height: 1.65; max-width: 68ch; margin: 0; color: var(--ink-2); }
+.story b { color: var(--ink); }
+.cmp { font-size: 12px; font-weight: 700; }
+.cmp.up { color: var(--bad); }
+.cmp.down { color: var(--good); }
+.cmp.flat { color: var(--muted); }
+
+/* Settings */
+.set-list { display: flex; flex-direction: column; gap: 8px; }
+.set-item { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto auto; gap: 8px; align-items: center; }
+.set-item.no-color { grid-template-columns: minmax(0, 1fr) auto auto; }
+.set-item input[type="color"] { width: 38px; height: 38px; padding: 3px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); cursor: pointer; }
+.set-item .count { font-size: 12px; color: var(--muted); white-space: nowrap; }
+
+/* Empty */
+.empty { text-align: center; padding: 36px 16px; color: var(--ink-2); display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.empty h3 { font-size: 20px; color: var(--ink); }
+.empty p { margin: 0; max-width: 44ch; }
+
+/* Dialog */
+dialog { border: 1px solid var(--line); border-radius: 18px; padding: 0; width: min(520px, calc(100vw - 24px)); background: var(--surface); color: var(--ink); box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+dialog::backdrop { background: rgba(10, 14, 24, .45); }
+.dlg { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.dlg h2 { font-size: 20px; }
+.dlg .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 440px) { .dlg .two { grid-template-columns: 1fr; } }
+.dlg .foot { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; padding-top: 4px; }
+.dlg .foot .left { margin-right: auto; }
+.amount-input { font-family: var(--f-display); font-size: 26px !important; font-weight: 800; min-height: 52px !important; }
+.pick { display: flex; flex-wrap: wrap; gap: 6px; }
+.pick button { border: 1px solid var(--line); background: var(--surface); padding: 5px 11px 5px 9px; border-radius: 999px; cursor: pointer; font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); }
+.pick button[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--bg); }
+.err { color: var(--bad); font-size: 13px; font-weight: 600; min-height: 0; }
+
+/* Toast */
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%) translateY(20px); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 50; max-width: calc(100vw - 32px); display: flex; gap: 12px; align-items: center; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+.toast button { background: transparent; border: 0; color: var(--accent-soft); font-weight: 700; cursor: pointer; text-decoration: underline; }
+
+.loading { padding: 60px 16px; text-align: center; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="top-row">
+      <div class="brand">
+        <h1>Troškovnik</h1>
+        <span class="sub" id="hdr-sub"></span>
+      </div>
+      <div class="spacer"></div>
+      <span class="mode" id="mode" title=""><i></i><span></span></span>
+      <button class="btn primary" id="add-btn" type="button">
+        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+        Novi trošak
+      </button>
+    </div>
+    <nav class="tabs" role="tablist" id="tabs">
+      <button class="tab" role="tab" data-tab="pregled">Pregled</button>
+      <button class="tab" role="tab" data-tab="troskovi">Troškovi</button>
+      <button class="tab" role="tab" data-tab="pretplate">Pretplate</button>
+      <button class="tab" role="tab" data-tab="recap">Recap</button>
+      <button class="tab" role="tab" data-tab="podesavanja">Podešavanja</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="view" class="view"><div class="loading">Učitavam troškove…</div></div>
+</main>
+
+<dialog id="dlg"></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+"use strict";
+
+/* ---------- Defaults ---------- */
+const DEFAULT_CONFIG = {
+  currency: "RSD",
+  categories: [
+    { id: "fudbal", name: "Fudbal", color: "#2E9E5B" },
+    { id: "izlazak", name: "Izlazak", color: "#D9468F" },
+    { id: "skola", name: "Škola", color: "#3B7DD8" },
+    { id: "hrana", name: "Hrana", color: "#E0892E" },
+    { id: "prevoz", name: "Prevoz", color: "#7C5CD6" },
+    { id: "odeca", name: "Odeća", color: "#12A1A1" },
+    { id: "pretplate", name: "Pretplate", color: "#C9A227" },
+    { id: "ostalo", name: "Ostalo", color: "#8590A6" }
+  ],
+  methods: [
+    { id: "gotovina", name: "Gotovina" },
+    { id: "debitna", name: "Debitna kartica" },
+    { id: "kreditna", name: "Kreditna kartica" },
+    { id: "telefon", name: "Telefon (Pay)" },
+    { id: "ips", name: "IPS / prenos" }
+  ]
+};
+const CYCLES = { nedeljno: "nedeljno", mesecno: "mesečno", godisnje: "godišnje" };
+
+/* ---------- State ---------- */
+const S = {
+  mode: "loading",
+  expenses: [],
+  subs: [],
+  config: clone(DEFAULT_CONFIG),
+  tab: "pregled",
+  filters: { q: "", cat: "", method: "", period: "all", from: "", to: "", min: "", max: "" },
+  sort: { key: "date", dir: "desc" },
+  recap: { type: "week", offset: 0 },
+  readOnly: false
+};
+try { const t = localStorage.getItem("troskovnik-tab"); if (t) S.tab = t; } catch (e) {}
+try { const r = JSON.parse(localStorage.getItem("troskovnik-recap") || "null"); if (r && r.type) S.recap.type = r.type; } catch (e) {}
+
+let DB = null, DL = null;
+
+/* ---------- Helpers ---------- */
+function clone(o) { return JSON.parse(JSON.stringify(o)); }
+function uid() {
+  try { if (crypto.randomUUID) return crypto.randomUUID().replace(/-/g, "").slice(0, 20); } catch (e) {}
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+}
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+const NF = new Intl.NumberFormat("sr-RS", { maximumFractionDigits: 2 });
+const NF0 = new Intl.NumberFormat("sr-RS", { maximumFractionDigits: 0 });
+function money(n, opts = {}) {
+  const v = Math.round((Number(n) || 0) * 100) / 100;
+  const s = (opts.round ? NF0 : NF).format(v);
+  return opts.bare ? s : s + " " + S.config.currency;
+}
+function moneyHTML(n) { return `${NF0.format(Math.round(n || 0))}<small>${esc(S.config.currency)}</small>`; }
+function pct(a, b) { if (!b) return null; return (a - b) / b * 100; }
+function deltaHTML(cur, prev, label) {
+  const p = pct(cur, prev);
+  if (p === null) return prev === 0 && cur > 0 ? `<span class="delta up">novo</span>` : "";
+  const cls = Math.abs(p) < 1 ? "flat" : p > 0 ? "up" : "down";
+  const arrow = cls === "up" ? "▲" : cls === "down" ? "▼" : "•";
+  return `<span class="delta ${cls}" title="${esc(label || "")}">${arrow} ${NF0.format(Math.abs(p))}%</span>`;
+}
+
+/* Dates (local, YYYY-MM-DD strings) */
+const pad = n => String(n).padStart(2, "0");
+function ymd(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+function parseD(s) { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); }
+function today() { return ymd(new Date()); }
+function addDays(s, n) { const d = parseD(s); d.setDate(d.getDate() + n); return ymd(d); }
+function addMonths(s, n) {
+  const d = parseD(s); const day = d.getDate();
+  d.setDate(1); d.setMonth(d.getMonth() + n);
+  const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(day, last)); return ymd(d);
+}
+function weekStart(s) { const d = parseD(s); const wd = (d.getDay() + 6) % 7; d.setDate(d.getDate() - wd); return ymd(d); }
+function monthStart(s) { return s.slice(0, 8) + "01"; }
+function monthEnd(s) { const d = parseD(s); return ymd(new Date(d.getFullYear(), d.getMonth() + 1, 0)); }
+function daysBetween(a, b) { return Math.round((parseD(b) - parseD(a)) / 86400000); }
+function isoWeek(s) {
+  const d = parseD(s); d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);
+  const w1 = new Date(d.getFullYear(), 0, 4);
+  return 1 + Math.round(((d - w1) / 86400000 - 3 + (w1.getDay() + 6) % 7) / 7);
+}
+const LOC = "sr-Latn-RS";
+const fmtMonth = s => cap(new Intl.DateTimeFormat(LOC, { month: "long", year: "numeric" }).format(parseD(s)).replace(/\.$/, ""));
+const fmtMonthShort = s => new Intl.DateTimeFormat(LOC, { month: "short" }).format(parseD(s)).replace(/\.$/, "");
+const fmtDay = s => new Intl.DateTimeFormat(LOC, { day: "numeric", month: "short" }).format(parseD(s));
+const fmtDayLong = s => cap(new Intl.DateTimeFormat(LOC, { weekday: "long", day: "numeric", month: "long" }).format(parseD(s)));
+const fmtWeekday = s => cap(new Intl.DateTimeFormat(LOC, { weekday: "short" }).format(parseD(s)).replace(/\.$/, ""));
+const fmtWeekdayLong = s => new Intl.DateTimeFormat(LOC, { weekday: "long" }).format(parseD(s));
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+function relDay(s) {
+  const n = daysBetween(today(), s);
+  if (n === 0) return "danas";
+  if (n === 1) return "sutra";
+  if (n === -1) return "juče";
+  if (n > 0) return `za ${n} ${n % 10 === 1 && n % 100 !== 11 ? "dan" : "dana"}`;
+  return `pre ${-n} ${(-n) % 10 === 1 && (-n) % 100 !== 11 ? "dan" : "dana"}`;
+}
+
+/* Lookups */
+const catById = id => S.config.categories.find(c => c.id === id) || { id, name: "Bez kategorije", color: "#8590A6" };
+const methodById = id => S.config.methods.find(m => m.id === id) || { id, name: id ? "Nepoznato" : "—" };
+const sum = arr => arr.reduce((a, e) => a + (Number(e.amount) || 0), 0);
+const inRange = (from, to) => e => e.date >= from && e.date <= to;
+function groupSum(list, key) {
+  const m = new Map();
+  for (const e of list) m.set(e[key], (m.get(e[key]) || 0) + (Number(e.amount) || 0));
+  return [...m.entries()].sort((a, b) => b[1] - a[1]);
+}
+function monthlyEq(s) {
+  const a = Number(s.amount) || 0;
+  return s.cycle === "nedeljno" ? a * 52 / 12 : s.cycle === "godisnje" ? a / 12 : a;
+}
+function nextAfter(date, cycle) {
+  return cycle === "nedeljno" ? addDays(date, 7) : cycle === "godisnje" ? addMonths(date, 12) : addMonths(date, 1);
+}
+
+/* ---------- Persistence ---------- */
+const LKEY = "troskovnik-v1";
+function localSave() {
+  try { localStorage.setItem(LKEY, JSON.stringify({ expenses: S.expenses, subs: S.subs, config: S.config })); } catch (e) {}
+}
+function localLoad() {
+  try { const raw = localStorage.getItem(LKEY); if (raw) { const d = JSON.parse(raw); S.expenses = d.expenses || []; S.subs = d.subs || []; if (d.config) S.config = d.config; } } catch (e) {}
+}
+function strip(o) { const { id, ...rest } = o; return rest; }
+function upsert(arr, item) { const i = arr.findIndex(x => x.id === item.id); if (i >= 0) arr[i] = item; else arr.push(item); }
+
+function failed(err) {
+  const code = err && err.code;
+  if (code === "invalid_argument" || code === "not_granted") { S.readOnly = true; toast("Nemaš dozvolu da menjaš ove podatke."); }
+  else if (code === "quota_exceeded") toast("Baza je puna. Obriši stare troškove pa pokušaj ponovo.");
+  else toast("Čuvanje nije uspelo. Pokušaj ponovo.");
+  console.error(err);
+}
+async function retryOnce(fn) {
+  try { return await fn(); }
+  catch (e) {
+    if (e && e.code === "unavailable") { await new Promise(r => setTimeout(r, 400 + Math.random() * 600)); return fn(); }
+    throw e;
+  }
+}
+const store = {
+  async putExpense(e) {
+    if (DB) { try { await retryOnce(() => DB.collection("expenses").doc(e.id).set(strip(e))); } catch (err) { failed(err); return false; } }
+    else { upsert(S.expenses, e); localSave(); refresh(); }
+    return true;
+  },
+  async delExpense(id) {
+    if (DB) { try { await retryOnce(() => DB.collection("expenses").doc(id).delete()); } catch (err) { failed(err); return false; } }
+    else { S.expenses = S.expenses.filter(x => x.id !== id); localSave(); refresh(); }
+    return true;
+  },
+  async putSub(s) {
+    if (DB) { try { await retryOnce(() => DB.collection("subs").doc(s.id).set(strip(s))); } catch (err) { failed(err); return false; } }
+    else { upsert(S.subs, s); localSave(); refresh(); }
+    return true;
+  },
+  async delSub(id) {
+    if (DB) { try { await retryOnce(() => DB.collection("subs").doc(id).delete()); } catch (err) { failed(err); return false; } }
+    else { S.subs = S.subs.filter(x => x.id !== id); localSave(); refresh(); }
+    return true;
+  },
+  async saveConfig(cfg) {
+    S.config = cfg;
+    if (DB) { try { await retryOnce(() => DB.doc("meta/config").set(clone(cfg))); } catch (err) { failed(err); return false; } }
+    else { localSave(); }
+    refresh();
+    return true;
+  }
+};
+
+function snapToList(snap) { return snap.docs.filter(d => d.exists).map(d => ({ id: d.id, ...d.data() })); }
+
+async function boot() {
+  const hasClaude = typeof window.claude === "object" && window.claude && typeof window.claude.use === "function";
+  if (hasClaude) {
+    try { DB = await window.claude.use("db"); } catch (e) { DB = null; }
+    try { DL = await window.claude.use("downloads"); } catch (e) { DL = null; }
+  }
+  if (DB) {
+    S.mode = "db";
+    let pending = 3;
+    const ready = () => { if (pending > 0 && --pending === 0) renderTab(); else if (pending <= 0) refresh(); };
+    const onErr = e => { console.error(e); if (e && e.code === "revoked") { S.readOnly = true; } toast("Veza sa bazom je prekinuta. Osveži stranicu."); };
+    DB.collection("expenses").onSnapshot(snap => { S.expenses = snapToList(snap); ready(); }, onErr);
+    DB.collection("subs").onSnapshot(snap => { S.subs = snapToList(snap); ready(); }, onErr);
+    DB.doc("meta/config").onSnapshot(snap => {
+      if (snap.exists) { const d = snap.data(); S.config = { ...clone(DEFAULT_CONFIG), ...clone(d) }; }
+      ready();
+    }, onErr);
+  } else {
+    S.mode = "local";
+    localLoad();
+    renderTab();
+  }
+  setMode();
+}
+
+function setMode() {
+  const m = $("#mode");
+  m.className = "mode " + S.mode;
+  $("span", m).textContent = S.mode === "db" ? "Sačuvano u oblaku" : S.mode === "local" ? "Sačuvano u ovom browseru" : "";
+  m.title = S.mode === "db" ? "Podaci se čuvaju uz ovaj artifact i vidiš ih sa svakog uređaja." : "Podaci se čuvaju samo u ovom browseru na ovom uređaju.";
+}
+
+/* ---------- Toast ---------- */
+let toastTimer;
+function toast(msg, action) {
+  const t = $("#toast");
+  t.innerHTML = `<span>${esc(msg)}</span>` + (action ? `<button type="button">${esc(action.label)}</button>` : "");
+  if (action) $("button", t).onclick = () => { t.classList.remove("show"); action.fn(); };
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), action ? 6000 : 3000);
+}
+
+/* ---------- Tabs ---------- */
+const VIEWS = {};
+function renderTab() {
+  if (!VIEWS[S.tab]) S.tab = "pregled";
+  $$("#tabs .tab").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === S.tab)));
+  // Fresh element per tab so listeners added by one tab's shell never leak into another
+  const old = $("#view");
+  const v = old.cloneNode(false);
+  old.replaceWith(v);
+  VIEWS[S.tab].shell(v);
+  refresh();
+}
+function refresh() {
+  if (S.mode === "loading") return;
+  updateHeader();
+  const v = VIEWS[S.tab];
+  if (v && v.update) v.update($("#view"));
+}
+function updateHeader() {
+  const t = today();
+  const m = sum(S.expenses.filter(inRange(monthStart(t), monthEnd(t))));
+  $("#hdr-sub").textContent = `${fmtMonth(t)} · ${money(m, { round: true })}`;
+}
+$("#tabs").addEventListener("click", e => {
+  const b = e.target.closest(".tab"); if (!b) return;
+  S.tab = b.dataset.tab;
+  try { localStorage.setItem("troskovnik-tab", S.tab); } catch (err) {}
+  renderTab();
+  window.scrollTo({ top: 0 });
+});
+$("#add-btn").addEventListener("click", () => openExpense());
+document.addEventListener("keydown", e => {
+  if (e.key === "n" && !e.ctrlKey && !e.metaKey && !e.altKey && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && !$("#dlg").open) { e.preventDefault(); openExpense(); }
+});
+
+/* ---------- Shared render bits ---------- */
+function catChip(id) { const c = catById(id); return `<span class="chip"><i class="dot" style="background:${esc(c.color)}"></i>${esc(c.name)}</span>`; }
+function barsHTML(rows, total, kind, prevMap) {
+  if (!rows.length) return `<p style="color:var(--muted);margin:0">Nema troškova u ovom periodu.</p>`;
+  const max = rows[0][1] || 1;
+  return `<div class="bars">${rows.map(([id, v]) => {
+    const meta = kind === "cat" ? catById(id) : { name: methodById(id).name, color: "var(--accent)" };
+    const share = total ? Math.round(v / total * 100) : 0;
+    let cmp = "";
+    if (prevMap) {
+      const p = prevMap.get(id) || 0;
+      const d = v - p;
+      const cls = Math.abs(d) < 1 ? "flat" : d > 0 ? "up" : "down";
+      cmp = `<span class="cmp ${cls}" title="U odnosu na prethodni period">${d > 0 ? "+" : d < 0 ? "−" : "±"}${money(Math.abs(d), { round: true, bare: true })}</span>`;
+    }
+    return `<div class="bar-row">
+      <div class="name"><i class="dot" style="background:${esc(meta.color)}"></i><span>${esc(meta.name)}</span> ${cmp}</div>
+      <div class="amt">${money(v, { round: true })}<em>${share}%</em></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.max(2, v / max * 100)}%;background:${esc(meta.color)}"></div></div>
+    </div>`;
+  }).join("")}</div>`;
+}
+/* Axis max = 4 round steps, so every gridline lands on a readable number */
+function niceMax(v) {
+  if (v <= 0) return 1000;
+  const raw = v / 4;
+  const p = Math.pow(10, Math.floor(Math.log10(raw)));
+  for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= raw) return m * p * 4;
+  return 40 * p;
+}
+function shortMoney(v) {
+  if (v >= 1e6) return NF.format(Math.round(v / 1e5) / 10) + "M";
+  if (v >= 1000) return NF.format(Math.round(v / 100) / 10) + "k";
+  return NF0.format(v);
+}
+/* Stacked (by category) or plain vertical bars. cols: [{label, total, parts:[[catId,val]], current, title}] */
+function barChart(cols, opts = {}) {
+  const W = 640, H = opts.h || 220, padL = 40, padR = 6, padT = 22, padB = 26;
+  const innerW = W - padL - padR, innerH = H - padT - padB;
+  const max = niceMax(Math.max(...cols.map(c => c.total), 0));
+  const y = v => padT + innerH - v / max * innerH;
+  const slot = innerW / cols.length;
+  const bw = Math.min(opts.maxBar || 46, slot * 0.62);
+  let g = "";
+  for (let i = 0; i <= 4; i++) {
+    const v = max / 4 * i, yy = y(v);
+    g += `<line class="grid" x1="${padL}" x2="${W - padR}" y1="${yy}" y2="${yy}"${i ? ' stroke-dasharray="2 4"' : ""}/>`;
+    g += `<text x="${padL - 8}" y="${yy + 4}" text-anchor="end">${shortMoney(v)}</text>`;
+  }
+  const showEvery = opts.labelEvery || 1;
+  cols.forEach((c, i) => {
+    const x = padL + slot * i + (slot - bw) / 2;
+    let acc = 0;
+    const parts = c.parts && c.parts.length ? c.parts : [[null, c.total]];
+    parts.forEach(([cid, v], j) => {
+      if (v <= 0) return;
+      const y0 = y(acc), y1 = y(acc + v);
+      const color = cid ? catById(cid).color : (c.current ? "var(--accent)" : "color-mix(in srgb, var(--accent) 45%, var(--surface-2))");
+      const top = j === parts.length - 1 || parts.slice(j + 1).every(p => p[1] <= 0);
+      const h = Math.max(0.5, y0 - y1);
+      g += `<rect x="${x}" y="${y1}" width="${bw}" height="${h}" fill="${color}" rx="${top ? 4 : 0}"${c.current || !opts.dimPast ? "" : ' opacity=".55"'}><title>${esc(c.title || c.label)}${cid ? " · " + esc(catById(cid).name) : ""}: ${money(v, { round: true })}</title></rect>`;
+      if (top && h > 4) g += `<rect x="${x}" y="${y1 + 4}" width="${bw}" height="${Math.min(h - 4, 4)}" fill="${color}"${c.current || !opts.dimPast ? "" : ' opacity=".55"'}/>`;
+      acc += v;
+    });
+    if (c.total > 0 && opts.totals !== false) g += `<text class="${c.current ? "cur" : "total"}" x="${x + bw / 2}" y="${y(c.total) - 6}" text-anchor="middle">${shortMoney(c.total)}</text>`;
+    if (i % showEvery === 0 || c.current) g += `<text class="${c.current ? "cur" : ""}" x="${x + bw / 2}" y="${H - 8}" text-anchor="middle">${esc(c.label)}</text>`;
+  });
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opts.aria || "Grafikon troškova")}">${g}</svg>`;
+}
+
+function exampleBanner() {
+  const n = S.expenses.filter(e => e.example).length + S.subs.filter(s => s.example).length;
+  if (!n) return "";
+  return `<div class="banner info"><p><b>Ovo su primeri.</b> Ubačeni su da vidiš kako sve radi. Kad uneseš svoje troškove, obriši ih jednim klikom.</p><button class="btn sm" type="button" data-act="clear-examples">Obriši primere</button></div>`;
+}
+async function clearExamples(btn) {
+  if (btn && !btn.classList.contains("armed")) { btn.classList.add("armed", "danger"); btn.textContent = "Klikni ponovo za brisanje"; return; }
+  const ex = S.expenses.filter(e => e.example), sx = S.subs.filter(s => s.example);
+  if (btn) { btn.disabled = true; btn.textContent = "Brišem…"; }
+  if (DB) {
+    for (const e of ex) await store.delExpense(e.id);
+    for (const s of sx) await store.delSub(s.id);
+  } else {
+    S.expenses = S.expenses.filter(e => !e.example); S.subs = S.subs.filter(s => !s.example); localSave(); refresh();
+  }
+  toast("Primeri su obrisani.");
+}
+function dueSubs() { const t = today(); return S.subs.filter(s => s.active !== false && s.nextDate && s.nextDate <= t).sort((a, b) => a.nextDate.localeCompare(b.nextDate)); }
+function dueBanner() {
+  const due = dueSubs();
+  if (!due.length) return "";
+  const names = due.map(s => `<b>${esc(s.name)}</b> (${relDay(s.nextDate)})`).join(", ");
+  return `<div class="banner warn"><p>${due.length === 1 ? "Dospela je pretplata" : "Dospele su pretplate"}: ${names}. ${due.length === 1 ? "Zabeleži je kao trošak kad bude naplaćena." : "Zabeleži ih kao trošak kad budu naplaćene."}</p><button class="btn sm" type="button" data-act="pay-all">Zabeleži ${due.length === 1 ? "plaćanje" : "sve"}</button></div>`;
+}
+async function paySub(s, silent) {
+  const t = today();
+  const date = s.nextDate && s.nextDate <= t ? s.nextDate : t;
+  const exp = { id: uid(), title: s.name, amount: Number(s.amount) || 0, date, category: s.category || "pretplate", method: s.method || "", note: "Pretplata · " + CYCLES[s.cycle || "mesecno"], subId: s.id, createdAt: Date.now() };
+  if (s.example) exp.example = true;
+  let next = s.nextDate || t;
+  while (next <= date) next = nextAfter(next, s.cycle || "mesecno");
+  const ok = await store.putExpense(exp);
+  if (!ok) return;
+  await store.putSub({ ...s, nextDate: next });
+  if (!silent) toast(`${s.name}: zabeleženo ${money(exp.amount, { round: true })}. Sledeće plaćanje ${fmtDay(next)}.`);
+}
+document.addEventListener("click", async e => {
+  const a = e.target.closest("[data-act]"); if (!a) return;
+  const act = a.dataset.act;
+  if (act === "clear-examples") clearExamples(a);
+  else if (act === "pay-all") { const due = dueSubs(); a.disabled = true; for (const s of due) await paySub(s, true); toast(due.length === 1 ? "Plaćanje je zabeleženo." : `Zabeleženo ${due.length} plaćanja.`); }
+  else if (act === "add-expense") openExpense();
+  else if (act === "add-sub") openSub();
+  else if (act === "go") { S.tab = a.dataset.tab; renderTab(); }
+  else if (act === "load-examples") loadLocalExamples();
+});
+
+/* ---------- View: Pregled ---------- */
+VIEWS.pregled = {
+  shell(v) {
+    v.innerHTML = `<div id="ov-banners" style="display:grid;gap:10px"></div>
+      <div class="kpis" id="ov-kpis"></div>
+      <div class="grid-2">
+        <section class="panel"><div class="panel-head"><h2>Poslednjih 6 meseci</h2><span class="hint">po kategorijama</span></div><div id="ov-chart"></div><div class="legend" id="ov-legend"></div></section>
+        <section class="panel"><div class="panel-head"><h2>Na šta ide novac</h2><span class="hint" id="ov-cat-hint"></span></div><div id="ov-cats"></div></section>
+      </div>
+      <div class="grid-3">
+        <section class="panel"><div class="panel-head"><h2>Poslednji troškovi</h2><button class="btn ghost sm" type="button" data-act="go" data-tab="troskovi">Svi →</button></div><div id="ov-recent"></div></section>
+        <section class="panel"><div class="panel-head"><h2>Čime plaćaš</h2><span class="hint">ovaj mesec</span></div><div id="ov-methods"></div></section>
+        <section class="panel"><div class="panel-head"><h2>Sledeće pretplate</h2><button class="btn ghost sm" type="button" data-act="go" data-tab="pretplate">Sve →</button></div><div id="ov-subs"></div></section>
+      </div>`;
+  },
+  update(v) {
+    const t = today();
+    if (!S.expenses.length && !S.subs.length) {
+      v.innerHTML = `<section class="panel">${emptyHTML()}</section>`;
+      return;
+    }
+    if (!$("#ov-kpis", v)) this.shell(v);
+    $("#ov-banners", v).innerHTML = exampleBanner() + dueBanner();
+
+    const ms = monthStart(t), me = monthEnd(t);
+    const dayN = parseD(t).getDate();
+    const pms = addMonths(ms, -1);
+    const pmSame = addDays(pms, Math.min(dayN, parseD(monthEnd(pms)).getDate()) - 1);
+    const month = S.expenses.filter(inRange(ms, me));
+    const mTot = sum(month);
+    const pmTot = sum(S.expenses.filter(inRange(pms, pmSame)));
+    const ws = weekStart(t), we = addDays(ws, 6);
+    const wTot = sum(S.expenses.filter(inRange(ws, we)));
+    const wd = daysBetween(ws, t);
+    const pwTot = sum(S.expenses.filter(inRange(addDays(ws, -7), addDays(ws, -7 + wd))));
+    const active = S.subs.filter(s => s.active !== false);
+    const subMonthly = active.reduce((a, s) => a + monthlyEq(s), 0);
+
+    $("#ov-kpis", v).innerHTML = `
+      <div class="kpi lead"><span class="eyebrow">${esc(fmtMonth(t))}</span><span class="val">${moneyHTML(mTot)}</span><span class="meta">${deltaHTML(mTot, pmTot, "U odnosu na isti deo prošlog meseca")} do ${dayN}. prošlog meseca: ${money(pmTot, { round: true })}</span></div>
+      <div class="kpi"><span class="eyebrow">Nedelja ${isoWeek(t)}</span><span class="val">${moneyHTML(wTot)}</span><span class="meta">${deltaHTML(wTot, pwTot, "U odnosu na isti deo prošle nedelje")} ${fmtDay(ws)} – ${fmtDay(we)}</span></div>
+      <div class="kpi"><span class="eyebrow">Prosek po danu</span><span class="val">${moneyHTML(mTot / dayN)}</span><span class="meta">${month.length} ${month.length === 1 ? "trošak" : "troškova"} ovog meseca</span></div>
+      <div class="kpi"><span class="eyebrow">Pretplate mesečno</span><span class="val">${moneyHTML(subMonthly)}</span><span class="meta">${active.length} ${active.length === 1 ? "aktivna" : "aktivnih"} · ${money(subMonthly * 12, { round: true })} godišnje</span></div>`;
+
+    // 6-month stacked chart
+    const cols = [];
+    for (let i = 5; i >= 0; i--) {
+      const s0 = addMonths(ms, -i), s1 = monthEnd(s0);
+      const list = S.expenses.filter(inRange(s0, s1));
+      const parts = groupSum(list, "category").reverse();
+      cols.push({ label: fmtMonthShort(s0), title: fmtMonth(s0), total: sum(list), parts, current: i === 0 });
+    }
+    $("#ov-chart", v).innerHTML = barChart(cols, { aria: "Troškovi po mesecima, poslednjih 6 meseci" });
+    const usedCats = new Set(); cols.forEach(c => c.parts.forEach(p => usedCats.add(p[0])));
+    $("#ov-legend", v).innerHTML = S.config.categories.filter(c => usedCats.has(c.id)).map(c => `<span><i class="dot" style="background:${esc(c.color)}"></i>${esc(c.name)}</span>`).join("");
+
+    $("#ov-cat-hint", v).textContent = fmtMonth(t).toLowerCase();
+    $("#ov-cats", v).innerHTML = barsHTML(groupSum(month, "category"), mTot, "cat");
+    $("#ov-methods", v).innerHTML = barsHTML(groupSum(month, "method"), mTot, "method");
+
+    const recent = [...S.expenses].sort(byDateDesc).slice(0, 6);
+    $("#ov-recent", v).innerHTML = recent.length ? `<div class="mini-list">${recent.map(e => `
+      <div class="mini-item" role="button" tabindex="0" data-edit="${esc(e.id)}" style="cursor:pointer">
+        <span class="t">${esc(e.title || catById(e.category).name)}</span>
+        <span class="a">${money(e.amount, { round: true })}</span>
+        <span class="s">${catChip(e.category)} ${fmtDay(e.date)}</span>
+      </div>`).join("")}</div>` : `<p style="color:var(--muted);margin:0">Još nema troškova.</p>`;
+
+    const upcoming = active.filter(s => s.nextDate).sort((a, b) => a.nextDate.localeCompare(b.nextDate)).slice(0, 5);
+    $("#ov-subs", v).innerHTML = upcoming.length ? `<div class="mini-list">${upcoming.map(s => {
+      const due = s.nextDate <= t;
+      return `<div class="mini-item">
+        <span class="t">${esc(s.name)}</span>
+        <span class="a">${money(s.amount, { round: true })}</span>
+        <span class="s">${due ? `<span class="tag bad">dospelo</span>` : daysBetween(t, s.nextDate) <= 3 ? `<span class="tag warn">uskoro</span>` : ""} ${fmtDay(s.nextDate)} · ${relDay(s.nextDate)}</span>
+      </div>`;
+    }).join("")}</div>` : `<div class="empty" style="padding:12px 0"><p>Nemaš pretplate.</p><button class="btn sm" type="button" data-act="add-sub">Dodaj pretplatu</button></div>`;
+  }
+};
+function byDateDesc(a, b) { return b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0); }
+function emptyHTML() {
+  return `<div class="empty">
+    <svg width="56" height="56" viewBox="0 0 56 56" aria-hidden="true"><rect x="8" y="6" width="40" height="44" rx="6" fill="var(--accent-soft)"/><path d="M17 19h22M17 27h22M17 35h13" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/></svg>
+    <h3>Još nema troškova</h3>
+    <p>Dodaj prvi trošak: iznos, na šta je otišao novac i čime je plaćeno. Pretplate dodaj u kartici Pretplate, pa ih beležiš jednim klikom kad stignu.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+      <button class="btn primary" type="button" data-act="add-expense">Dodaj prvi trošak</button>
+      ${S.mode === "local" ? `<button class="btn" type="button" data-act="load-examples">Učitaj primere</button>` : ""}
+    </div>
+  </div>`;
+}
+document.addEventListener("click", e => {
+  const r = e.target.closest("[data-edit]"); if (!r) return;
+  const ex = S.expenses.find(x => x.id === r.dataset.edit); if (ex) openExpense(ex);
+});
+document.addEventListener("keydown", e => {
+  if (e.key !== "Enter") return;
+  const r = e.target.closest && e.target.closest("[data-edit]"); if (!r) return;
+  const ex = S.expenses.find(x => x.id === r.dataset.edit); if (ex) openExpense(ex);
+});
+
+/* ---------- View: Troškovi ---------- */
+const PERIODS = [
+  ["all", "Sve vreme"], ["week", "Ova nedelja"], ["lastweek", "Prošla nedelja"], ["month", "Ovaj mesec"],
+  ["lastmonth", "Prošli mesec"], ["30", "Poslednjih 30 dana"], ["year", "Ova godina"], ["custom", "Izaberi datume"]
+];
+function periodRange(p) {
+  const t = today();
+  switch (p) {
+    case "week": return [weekStart(t), addDays(weekStart(t), 6)];
+    case "lastweek": return [addDays(weekStart(t), -7), addDays(weekStart(t), -1)];
+    case "month": return [monthStart(t), monthEnd(t)];
+    case "lastmonth": { const s = addMonths(monthStart(t), -1); return [s, monthEnd(s)]; }
+    case "30": return [addDays(t, -29), t];
+    case "year": return [t.slice(0, 4) + "-01-01", t.slice(0, 4) + "-12-31"];
+    case "custom": return [S.filters.from || "0000-01-01", S.filters.to || "9999-12-31"];
+    default: return ["0000-01-01", "9999-12-31"];
+  }
+}
+const SORTS = [["date", "desc", "Najnovije prvo"], ["date", "asc", "Najstarije prvo"], ["amount", "desc", "Najskuplje prvo"], ["amount", "asc", "Najjeftinije prvo"], ["title", "asc", "Opis A–Ž"], ["category", "asc", "Kategorija"], ["method", "asc", "Način plaćanja"]];
+function filtered() {
+  const f = S.filters;
+  const [from, to] = periodRange(f.period);
+  const q = f.q.trim().toLowerCase();
+  const min = f.min === "" ? -Infinity : Number(f.min), max = f.max === "" ? Infinity : Number(f.max);
+  let list = S.expenses.filter(e => e.date >= from && e.date <= to
+    && (!f.cat || e.category === f.cat) && (!f.method || e.method === f.method)
+    && e.amount >= min && e.amount <= max
+    && (!q || (e.title || "").toLowerCase().includes(q) || (e.note || "").toLowerCase().includes(q) || catById(e.category).name.toLowerCase().includes(q)));
+  const { key, dir } = S.sort, m = dir === "asc" ? 1 : -1;
+  const coll = new Intl.Collator("sr-Latn");
+  list.sort((a, b) => {
+    let r = 0;
+    if (key === "amount") r = a.amount - b.amount;
+    else if (key === "title") r = coll.compare(a.title || "", b.title || "");
+    else if (key === "category") r = coll.compare(catById(a.category).name, catById(b.category).name);
+    else if (key === "method") r = coll.compare(methodById(a.method).name, methodById(b.method).name);
+    else r = a.date.localeCompare(b.date) || (a.createdAt || 0) - (b.createdAt || 0);
+    return r * m || byDateDesc(a, b);
+  });
+  return list;
+}
+function opts(list, val, allLabel) { return (allLabel ? `<option value="">${esc(allLabel)}</option>` : "") + list.map(o => `<option value="${esc(o.id)}"${o.id === val ? " selected" : ""}>${esc(o.name)}</option>`).join(""); }
+VIEWS.troskovi = {
+  shell(v) {
+    const f = S.filters;
+    v.innerHTML = `<section class="panel">
+      <div class="filters">
+        <label class="field search"><span>Pretraga</span><input class="input" id="f-q" type="search" placeholder="Opis, napomena, kategorija…" value="${esc(f.q)}"></label>
+        <label class="field"><span>Kategorija</span><select class="input" id="f-cat"></select></label>
+        <label class="field"><span>Način plaćanja</span><select class="input" id="f-method"></select></label>
+        <label class="field"><span>Period</span><select class="input" id="f-period">${PERIODS.map(([k, l]) => `<option value="${k}"${k === f.period ? " selected" : ""}>${l}</option>`).join("")}</select></label>
+        <label class="field"><span>Sortiraj</span><select class="input" id="f-sort">${SORTS.map(([k, d, l]) => `<option value="${k}:${d}"${k === S.sort.key && d === S.sort.dir ? " selected" : ""}>${l}</option>`).join("")}</select></label>
+      </div>
+      <div class="filters-2">
+        <label class="field" id="f-from-w"><span>Od datuma</span><input class="input" id="f-from" type="date" value="${esc(f.from)}"></label>
+        <label class="field" id="f-to-w"><span>Do datuma</span><input class="input" id="f-to" type="date" value="${esc(f.to)}"></label>
+        <label class="field"><span>Iznos od</span><input class="input" id="f-min" type="number" inputmode="decimal" min="0" placeholder="0" value="${esc(f.min)}"></label>
+        <label class="field"><span>Iznos do</span><input class="input" id="f-max" type="number" inputmode="decimal" min="0" placeholder="bez limita" value="${esc(f.max)}"></label>
+        <button class="btn ghost" type="button" id="f-reset">Poništi filtere</button>
+        <span style="flex:1"></span>
+        <button class="btn" type="button" id="f-export" title="Preuzmi filtrirane troškove kao CSV">Izvezi CSV</button>
+      </div>
+      <div class="summary-line" id="t-summary"></div>
+    </section>
+    <section class="panel" style="padding-top:8px"><div id="t-table"></div></section>`;
+    const set = (k, val) => { S.filters[k] = val; this.update(v); };
+    $("#f-q", v).addEventListener("input", e => set("q", e.target.value));
+    $("#f-cat", v).addEventListener("change", e => set("cat", e.target.value));
+    $("#f-method", v).addEventListener("change", e => set("method", e.target.value));
+    $("#f-period", v).addEventListener("change", e => set("period", e.target.value));
+    $("#f-from", v).addEventListener("change", e => { S.filters.period = "custom"; $("#f-period", v).value = "custom"; set("from", e.target.value); });
+    $("#f-to", v).addEventListener("change", e => { S.filters.period = "custom"; $("#f-period", v).value = "custom"; set("to", e.target.value); });
+    $("#f-min", v).addEventListener("input", e => set("min", e.target.value));
+    $("#f-max", v).addEventListener("input", e => set("max", e.target.value));
+    $("#f-sort", v).addEventListener("change", e => { const [k, d] = e.target.value.split(":"); S.sort = { key: k, dir: d }; this.update(v); });
+    $("#f-reset", v).addEventListener("click", () => { S.filters = { q: "", cat: "", method: "", period: "all", from: "", to: "", min: "", max: "" }; S.sort = { key: "date", dir: "desc" }; renderTab(); });
+    $("#f-export", v).addEventListener("click", exportCSV);
+    v.addEventListener("click", e => {
+      const h = e.target.closest("[data-sort]"); if (!h) return;
+      const k = h.dataset.sort;
+      S.sort = S.sort.key === k ? { key: k, dir: S.sort.dir === "asc" ? "desc" : "asc" } : { key: k, dir: k === "date" || k === "amount" ? "desc" : "asc" };
+      const sel = $("#f-sort", v); const val = `${S.sort.key}:${S.sort.dir}`;
+      if ([...sel.options].some(o => o.value === val)) sel.value = val;
+      this.update(v);
+    });
+  },
+  update(v) {
+    if (!$("#f-cat", v)) return;
+    const f = S.filters;
+    $("#f-cat", v).innerHTML = opts(S.config.categories, f.cat, "Sve kategorije");
+    $("#f-method", v).innerHTML = opts(S.config.methods, f.method, "Svi načini");
+    const list = filtered();
+    const tot = sum(list);
+    const [from, to] = periodRange(f.period);
+    const days = f.period === "all" || (f.period === "custom" && (!f.from || !f.to)) ? null : daysBetween(from, to > today() ? today() : to) + 1;
+    const active = (f.q ? 1 : 0) + (f.cat ? 1 : 0) + (f.method ? 1 : 0) + (f.period !== "all" ? 1 : 0) + (f.min !== "" ? 1 : 0) + (f.max !== "" ? 1 : 0);
+    $("#t-summary", v).innerHTML = `<span>Ukupno <strong>${money(tot)}</strong></span>
+      <span>${list.length} ${list.length === 1 ? "trošak" : "troškova"}</span>
+      ${list.length ? `<span>prosek ${money(tot / list.length, { round: true })} po trošku</span>` : ""}
+      ${days && days > 0 ? `<span>${money(tot / days, { round: true })} po danu</span>` : ""}
+      ${active ? `<span class="tag">${active} ${active === 1 ? "filter" : "filtera"}</span>` : ""}`;
+
+    const arrow = k => S.sort.key === k ? (S.sort.dir === "asc" ? "↑" : "↓") : "";
+    const hb = (k, label, cls = "") => `<button type="button" data-sort="${k}" class="${S.sort.key === k ? "on" : ""} ${cls}">${label} ${arrow(k)}</button>`;
+    if (!list.length) {
+      $("#t-table", v).innerHTML = S.expenses.length
+        ? `<div class="empty"><h3>Ništa ne odgovara filterima</h3><p>Promeni period ili poništi filtere.</p></div>`
+        : emptyHTML();
+      return;
+    }
+    const groupByDay = S.sort.key === "date";
+    let rows = "", lastDay = null;
+    const dayTotals = groupByDay ? new Map(groupSum(list, "date")) : null;
+    for (const e of list) {
+      if (groupByDay && e.date !== lastDay) {
+        lastDay = e.date;
+        rows += `<div class="day-sep"><span>${esc(fmtDayLong(e.date))} · ${relDay(e.date)}</span><span>${money(dayTotals.get(e.date), { round: true })}</span></div>`;
+      }
+      const sub = e.subId ? `<span class="tag muted" style="margin-left:6px">pretplata</span>` : "";
+      rows += `<div class="tr body" data-edit="${esc(e.id)}" role="button" tabindex="0">
+        <div class="date"><b>${parseD(e.date).getDate()}.</b>${esc(fmtMonthShort(e.date))} ${e.date.slice(0, 4)}</div>
+        <div class="title"><div>${esc(e.title || catById(e.category).name)}${sub}</div>${e.note ? `<small>${esc(e.note)}</small>` : ""}</div>
+        <div class="cat">${catChip(e.category)}</div>
+        <div class="method">${esc(methodById(e.method).name)}</div>
+        <div class="amount">${money(e.amount)}</div>
+        <div class="act r"><span class="icon-btn" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M9.5 1.5l3 3L5 12H2v-3z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span></div>
+      </div>`;
+    }
+    $("#t-table", v).innerHTML = `<div class="tbl">
+      <div class="tr head">${hb("date", "Datum")}${hb("title", "Opis")}${hb("category", "Kategorija")}${hb("method", "Plaćeno")}${hb("amount", "Iznos", "r")}<span></span></div>
+      ${rows}</div>`;
+  }
+};
+async function exportCSV() {
+  const list = filtered();
+  if (!list.length) { toast("Nema troškova za izvoz."); return; }
+  const q = s => `"${String(s ?? "").replace(/"/g, '""')}"`;
+  const lines = [["Datum", "Opis", "Kategorija", "Način plaćanja", "Iznos", "Valuta", "Napomena"].map(q).join(";")];
+  for (const e of list) lines.push([e.date, e.title, catById(e.category).name, methodById(e.method).name, String(e.amount).replace(".", ","), S.config.currency, e.note].map(q).join(";"));
+  const data = "﻿" + lines.join("\r\n");
+  const filename = `troskovi-${today()}.csv`;
+  if (DL) {
+    try { await DL.save({ filename, data }); toast("CSV je sačuvan."); }
+    catch (err) { if (err && err.code !== "declined") toast("Izvoz nije uspeo ovde."); }
+    return;
+  }
+  try {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([data], { type: "text/csv" }));
+    a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  } catch (err) { toast("Izvoz nije uspeo ovde."); }
+}
+
+/* ---------- View: Pretplate ---------- */
+VIEWS.pretplate = {
+  shell(v) {
+    v.innerHTML = `<div id="sb-banners" style="display:grid;gap:10px"></div>
+      <div class="kpis" id="sb-kpis"></div>
+      <section class="panel">
+        <div class="panel-head"><h2>Tvoje pretplate</h2><button class="btn primary sm" type="button" data-act="add-sub">+ Nova pretplata</button></div>
+        <div id="sb-list"></div>
+      </section>`;
+    v.addEventListener("click", async e => {
+      const b = e.target.closest("[data-sub]"); if (!b) return;
+      const s = S.subs.find(x => x.id === b.dataset.sub); if (!s) return;
+      if (b.dataset.do === "edit") openSub(s);
+      else if (b.dataset.do === "pay") { b.disabled = true; await paySub(s); }
+    });
+  },
+  update(v) {
+    if (!$("#sb-list", v)) return;
+    const t = today();
+    $("#sb-banners", v).innerHTML = dueBanner();
+    const active = S.subs.filter(s => s.active !== false);
+    const mo = active.reduce((a, s) => a + monthlyEq(s), 0);
+    const ms = monthStart(t), me = monthEnd(t);
+    const thisMonthLeft = active.filter(s => s.nextDate && s.nextDate >= t && s.nextDate <= me);
+    const paidThisMonth = sum(S.expenses.filter(e => e.subId && e.date >= ms && e.date <= me));
+    const top = [...active].sort((a, b) => monthlyEq(b) - monthlyEq(a))[0];
+    $("#sb-kpis", v).innerHTML = `
+      <div class="kpi lead"><span class="eyebrow">Mesečno</span><span class="val">${moneyHTML(mo)}</span><span class="meta">${active.length} ${active.length === 1 ? "aktivna pretplata" : "aktivnih pretplata"}</span></div>
+      <div class="kpi"><span class="eyebrow">Godišnje</span><span class="val">${moneyHTML(mo * 12)}</span><span class="meta">ako se ništa ne promeni</span></div>
+      <div class="kpi"><span class="eyebrow">Još ovog meseca</span><span class="val">${moneyHTML(sum(thisMonthLeft))}</span><span class="meta">${thisMonthLeft.length} ${thisMonthLeft.length === 1 ? "naplata" : "naplata"} · plaćeno ${money(paidThisMonth, { round: true })}</span></div>
+      <div class="kpi"><span class="eyebrow">Najskuplja</span><span class="val" style="font-size:clamp(18px,2.4vw,24px)">${top ? esc(top.name) : "—"}</span><span class="meta">${top ? money(monthlyEq(top), { round: true }) + " mesečno" : "nema pretplata"}</span></div>`;
+    const list = [...S.subs].sort((a, b) => (a.active === false) - (b.active === false) || (a.nextDate || "9").localeCompare(b.nextDate || "9"));
+    if (!list.length) {
+      $("#sb-list", v).innerHTML = `<div class="empty"><h3>Nema pretplata</h3><p>Dodaj Spotify, Netflix, teretanu, članarinu za fudbal i slično. Videćeš koliko te koštaju mesečno i kad stiže sledeća naplata.</p><button class="btn primary" type="button" data-act="add-sub">Dodaj pretplatu</button></div>`;
+      return;
+    }
+    $("#sb-list", v).innerHTML = `<div class="subs">${list.map(s => {
+      const off = s.active === false;
+      const due = !off && s.nextDate && s.nextDate <= t;
+      const soon = !off && !due && s.nextDate && daysBetween(t, s.nextDate) <= 3;
+      const paid = S.expenses.filter(e => e.subId === s.id);
+      return `<article class="sub-card${off ? " off" : ""}">
+        <div class="row"><h3>${esc(s.name)}</h3>${off ? `<span class="tag muted">pauzirana</span>` : due ? `<span class="tag bad">dospelo</span>` : soon ? `<span class="tag warn">uskoro</span>` : `<span class="tag">${CYCLES[s.cycle || "mesecno"]}</span>`}</div>
+        <div class="price">${money(s.amount, { round: true })} <small>/ ${s.cycle === "nedeljno" ? "nedeljno" : s.cycle === "godisnje" ? "godišnje" : "mesečno"}</small></div>
+        <div class="row" style="flex-wrap:wrap">${catChip(s.category || "pretplate")}<span class="next">${esc(methodById(s.method).name)}</span></div>
+        <div class="next">${off ? "Ne naplaćuje se" : s.nextDate ? `Sledeće: <b>${esc(fmtDayLong(s.nextDate))}</b> (${relDay(s.nextDate)})` : "Bez datuma"}${s.cycle !== "mesecno" ? `<br>≈ ${money(monthlyEq(s), { round: true })} mesečno` : ""}${paid.length ? `<br>Ukupno plaćeno: ${money(sum(paid), { round: true })} (${paid.length}×)` : ""}</div>
+        <div class="actions">
+          ${off ? "" : `<button class="btn sm${due ? " primary" : ""}" type="button" data-sub="${esc(s.id)}" data-do="pay">Plaćeno</button>`}
+          <button class="btn sm ghost" type="button" data-sub="${esc(s.id)}" data-do="edit">Izmeni</button>
+        </div>
+      </article>`;
+    }).join("")}</div>`;
+  }
+};
+
+/* ---------- View: Recap ---------- */
+function recapRange(type, offset) {
+  const t = today();
+  if (type === "week") { const s = addDays(weekStart(t), offset * 7); return [s, addDays(s, 6)]; }
+  const s = addMonths(monthStart(t), offset); return [s, monthEnd(s)];
+}
+function recapLabel(type, from, to) {
+  if (type === "week") return `Nedelja ${isoWeek(from)} · ${fmtDay(from)} – ${fmtDay(to)} ${to.slice(0, 4)}`;
+  return fmtMonth(from);
+}
+VIEWS.recap = {
+  shell(v) {
+    v.innerHTML = `<section class="panel">
+        <div class="recap-bar">
+          <div class="seg" role="group" aria-label="Vrsta recapa">
+            <button type="button" data-rt="week">Nedeljni</button>
+            <button type="button" data-rt="month">Mesečni</button>
+          </div>
+          <div class="period-nav">
+            <button class="btn sm" type="button" id="rc-prev" aria-label="Prethodni period">←</button>
+            <button class="btn sm" type="button" id="rc-next" aria-label="Sledeći period">→</button>
+          </div>
+          <span class="period-label" id="rc-label"></span>
+          <span style="flex:1"></span>
+          <button class="btn sm ghost" type="button" id="rc-now">Trenutni period</button>
+        </div>
+      </section>
+      <div id="rc-body" class="view"></div>`;
+    $$("[data-rt]", v).forEach(b => b.addEventListener("click", () => {
+      S.recap = { type: b.dataset.rt, offset: 0 };
+      try { localStorage.setItem("troskovnik-recap", JSON.stringify({ type: S.recap.type })); } catch (e) {}
+      this.update(v);
+    }));
+    $("#rc-prev", v).addEventListener("click", () => { S.recap.offset--; this.update(v); });
+    $("#rc-next", v).addEventListener("click", () => { if (S.recap.offset < 0) { S.recap.offset++; this.update(v); } });
+    $("#rc-now", v).addEventListener("click", () => { S.recap.offset = 0; this.update(v); });
+  },
+  update(v) {
+    if (!$("#rc-body", v)) return;
+    const { type, offset } = S.recap;
+    $$("[data-rt]", v).forEach(b => b.setAttribute("aria-pressed", String(b.dataset.rt === type)));
+    $("#rc-next", v).disabled = offset >= 0;
+    $("#rc-now", v).hidden = offset === 0;
+    const [from, to] = recapRange(type, offset);
+    const [pfrom, pto] = recapRange(type, offset - 1);
+    $("#rc-label", v).textContent = recapLabel(type, from, to);
+    const t = today();
+    const list = S.expenses.filter(inRange(from, to));
+    const prev = S.expenses.filter(inRange(pfrom, pto));
+    const tot = sum(list), ptot = sum(prev);
+    const isCurrent = offset === 0;
+    const elapsed = isCurrent ? daysBetween(from, t) + 1 : daysBetween(from, to) + 1;
+    const prevSame = isCurrent ? sum(prev.filter(e => e.date <= addDays(pfrom, elapsed - 1))) : ptot;
+    const unit = type === "week" ? "nedelje" : "meseca";
+    const unitPrev = type === "week" ? "prošle nedelje" : "prošlog meseca";
+    const thisUnit = isCurrent ? (type === "week" ? "Ove nedelje" : "Ovog meseca") : (type === "week" ? "Te nedelje" : "Tog meseca");
+
+    const cats = groupSum(list, "category");
+    const methods = groupSum(list, "method");
+    const days = groupSum(list, "date");
+    const prevCats = new Map(groupSum(prev, "category"));
+    const subsPaid = sum(list.filter(e => e.subId));
+
+    if (!list.length) {
+      $("#rc-body", v).innerHTML = `<section class="panel"><div class="empty"><h3>Nema troškova u ovom periodu</h3><p>${ptot ? `Prethodni period: ${money(ptot, { round: true })}.` : "Probaj raniji ili kasniji period strelicama gore."}</p><button class="btn primary" type="button" data-act="add-expense">Dodaj trošak</button></div></section>`;
+      return;
+    }
+
+    // Story
+    const p = pct(isCurrent ? tot : tot, prevSame);
+    const topCat = cats[0];
+    const topDay = days[0];
+    const big = [...list].sort((a, b) => b.amount - a.amount)[0];
+    let story = `${thisUnit} je ukupno potrošeno <b>${money(tot, { round: true })}</b> u ${list.length} ${list.length === 1 ? "trošku" : "troškova"}.`;
+    if (topCat) story += ` Najviše je otišlo na <b>${esc(catById(topCat[0]).name)}</b>: ${money(topCat[1], { round: true })}, to je ${Math.round(topCat[1] / tot * 100)}% svega.`;
+    if (p !== null && Math.abs(p) >= 1) story += ` To je <b>${NF0.format(Math.abs(p))}% ${p > 0 ? "više" : "manje"}</b> nego ${isCurrent && elapsed < daysBetween(from, to) + 1 ? `u istom delu ${unitPrev}` : unitPrev} (${money(prevSame, { round: true })}).`;
+    else if (p !== null) story += ` Otprilike isto kao ${unitPrev}.`;
+    if (cats.length > 1) {
+      let grew = null;
+      for (const [id, val] of cats) { const d = val - (prevCats.get(id) || 0); if (d > 0 && (!grew || d > grew[1])) grew = [id, d]; }
+      if (grew && ptot) story += ` Najveći skok je kod kategorije ${esc(catById(grew[0]).name)} (+${money(grew[1], { round: true })}).`;
+    }
+    if (type === "month" && topDay) story += ` Najskuplji dan je bio ${esc(fmtDayLong(topDay[0]).toLowerCase())} sa ${money(topDay[1], { round: true })}.`;
+    else if (topDay) story += ` Najviše je potrošeno u ${esc(fmtWeekdayLong(topDay[0]))}: ${money(topDay[1], { round: true })}.`;
+    if (subsPaid) story += ` Od toga su pretplate ${money(subsPaid, { round: true })}.`;
+    if (isCurrent && type === "month") {
+      const totalDays = daysBetween(from, to) + 1;
+      story += ` Ako nastaviš ovim tempom, mesec se završava na oko <b>${money(tot / elapsed * totalDays, { round: true })}</b>.`;
+    }
+
+    // Day chart
+    const n = daysBetween(from, to) + 1;
+    const dayMap = new Map(days);
+    const maxDay = topDay ? topDay[0] : null;
+    const cols = [];
+    for (let i = 0; i < n; i++) {
+      const d = addDays(from, i);
+      const parts = groupSum(list.filter(e => e.date === d), "category").reverse();
+      cols.push({ label: type === "week" ? fmtWeekday(d) : String(parseD(d).getDate()), title: fmtDayLong(d), total: dayMap.get(d) || 0, parts, current: d === maxDay });
+    }
+    const chart = barChart(cols, { aria: "Troškovi po danima", labelEvery: type === "week" ? 1 : 3, totals: type === "week", maxBar: type === "week" ? 52 : 14, h: type === "week" ? 220 : 200 });
+
+    const top5 = [...list].sort((a, b) => b.amount - a.amount).slice(0, 5);
+    $("#rc-body", v).innerHTML = `
+      <section class="panel"><span class="eyebrow">Sažetak</span><p class="story" style="margin-top:8px">${story}</p></section>
+      <div class="kpis">
+        <div class="kpi lead"><span class="eyebrow">Ukupno</span><span class="val">${moneyHTML(tot)}</span><span class="meta">${deltaHTML(tot, prevSame, "U odnosu na prethodni period")} ${unitPrev}: ${money(prevSame, { round: true })}</span></div>
+        <div class="kpi"><span class="eyebrow">Prosek po danu</span><span class="val">${moneyHTML(tot / elapsed)}</span><span class="meta">${elapsed} ${elapsed === 1 ? "dan" : "dana"} ${unit}</span></div>
+        <div class="kpi"><span class="eyebrow">Broj troškova</span><span class="val">${list.length}</span><span class="meta">prosečno ${money(tot / list.length, { round: true })}</span></div>
+        <div class="kpi"><span class="eyebrow">Najveći trošak</span><span class="val">${moneyHTML(big.amount)}</span><span class="meta" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(big.title || catById(big.category).name)} · ${fmtDay(big.date)}</span></div>
+      </div>
+      <section class="panel"><div class="panel-head"><h2>Po danima</h2><span class="hint">najskuplji dan je istaknut</span></div>${chart}</section>
+      <div class="grid-2">
+        <section class="panel"><div class="panel-head"><h2>Po kategorijama</h2><span class="hint">razlika u odnosu na ${unitPrev}</span></div>${barsHTML(cats, tot, "cat", prevCats)}</section>
+        <section class="panel"><div class="panel-head"><h2>Načini plaćanja</h2></div>${barsHTML(methods, tot, "method")}</section>
+      </div>
+      <section class="panel"><div class="panel-head"><h2>Top 5 troškova</h2></div><div class="mini-list">${top5.map(e => `
+        <div class="mini-item" role="button" tabindex="0" data-edit="${esc(e.id)}" style="cursor:pointer">
+          <span class="t">${esc(e.title || catById(e.category).name)}</span>
+          <span class="a">${money(e.amount, { round: true })}</span>
+          <span class="s">${catChip(e.category)} ${esc(fmtDayLong(e.date))} · ${esc(methodById(e.method).name)}</span>
+        </div>`).join("")}</div></section>`;
+  }
+};
+
+/* ---------- View: Podešavanja ---------- */
+VIEWS.podesavanja = {
+  shell(v) {
+    v.innerHTML = `<div class="grid-2">
+      <section class="panel"><div class="panel-head"><h2>Kategorije</h2><span class="hint">Promena naziva ili boje važi za sve troškove</span></div>
+        <div class="set-list" id="st-cats"></div>
+        <form class="set-item" id="st-cat-add" style="margin-top:12px">
+          <input type="color" id="st-cat-color" value="#4F7CFF" aria-label="Boja nove kategorije">
+          <input class="input" id="st-cat-name" placeholder="Nova kategorija, npr. Teretana" maxlength="40">
+          <button class="btn" type="submit">Dodaj</button><span></span>
+        </form>
+      </section>
+      <div class="view">
+        <section class="panel"><div class="panel-head"><h2>Načini plaćanja</h2></div>
+          <div class="set-list" id="st-methods"></div>
+          <form class="set-item no-color" id="st-m-add" style="margin-top:12px">
+            <input class="input" id="st-m-name" placeholder="Novi način, npr. Revolut" maxlength="40">
+            <button class="btn" type="submit">Dodaj</button><span></span>
+          </form>
+        </section>
+        <section class="panel"><div class="panel-head"><h2>Valuta</h2></div>
+          <label class="field"><span>Oznaka koja se prikazuje uz iznose</span><input class="input" id="st-cur" maxlength="6" style="max-width:160px"></label>
+        </section>
+        <section class="panel"><div class="panel-head"><h2>Podaci</h2></div>
+          <p style="margin:0 0 10px;color:var(--ink-2)" id="st-where"></p>
+          <button class="btn" type="button" id="st-export">Izvezi sve troškove (CSV)</button>
+        </section>
+      </div>
+    </div>`;
+    const cfg = () => clone(S.config);
+    $("#st-cat-add", v).addEventListener("submit", e => {
+      e.preventDefault();
+      const name = $("#st-cat-name", v).value.trim(); if (!name) return;
+      const c = cfg(); c.categories.push({ id: "c" + uid().slice(0, 10), name, color: $("#st-cat-color", v).value });
+      $("#st-cat-name", v).value = "";
+      store.saveConfig(c);
+    });
+    $("#st-m-add", v).addEventListener("submit", e => {
+      e.preventDefault();
+      const name = $("#st-m-name", v).value.trim(); if (!name) return;
+      const c = cfg(); c.methods.push({ id: "m" + uid().slice(0, 10), name });
+      $("#st-m-name", v).value = "";
+      store.saveConfig(c);
+    });
+    $("#st-cur", v).addEventListener("change", e => { const c = cfg(); c.currency = e.target.value.trim() || "RSD"; store.saveConfig(c); });
+    $("#st-export", v).addEventListener("click", () => { const keep = S.filters; S.filters = { q: "", cat: "", method: "", period: "all", from: "", to: "", min: "", max: "" }; exportCSV().finally(() => { S.filters = keep; }); });
+    v.addEventListener("change", e => {
+      const el = e.target; const row = el.closest("[data-cfg]"); if (!row) return;
+      const c = cfg(); const listKey = row.dataset.cfg; const item = c[listKey].find(x => x.id === row.dataset.id); if (!item) return;
+      if (el.type === "color") item.color = el.value;
+      else { const nm = el.value.trim(); if (!nm) { el.value = item.name; return; } item.name = nm; }
+      store.saveConfig(c);
+    });
+    v.addEventListener("click", e => {
+      const b = e.target.closest("[data-del]"); if (!b) return;
+      if (!b.classList.contains("armed")) { b.classList.add("armed"); b.textContent = "Potvrdi"; setTimeout(() => { if (b.isConnected) { b.classList.remove("armed"); b.textContent = "Obriši"; } }, 4000); return; }
+      const row = b.closest("[data-cfg]"); const c = cfg();
+      c[row.dataset.cfg] = c[row.dataset.cfg].filter(x => x.id !== row.dataset.id);
+      store.saveConfig(c);
+    });
+  },
+  update(v) {
+    if (!$("#st-cats", v)) return;
+    if (v.contains(document.activeElement) && document.activeElement.closest("[data-cfg]")) return;
+    const used = k => { const m = new Map(); S.expenses.forEach(e => m.set(e[k], (m.get(e[k]) || 0) + 1)); return m; };
+    const uc = used("category"), um = used("method");
+    $("#st-cats", v).innerHTML = S.config.categories.map(c => `<div class="set-item" data-cfg="categories" data-id="${esc(c.id)}">
+      <input type="color" value="${esc(c.color)}" aria-label="Boja za ${esc(c.name)}">
+      <input class="input" value="${esc(c.name)}" maxlength="40" aria-label="Naziv kategorije">
+      <span class="count">${uc.get(c.id) || 0}×</span>
+      <button class="btn sm ghost danger" type="button" data-del>Obriši</button></div>`).join("");
+    $("#st-methods", v).innerHTML = S.config.methods.map(m => `<div class="set-item no-color" data-cfg="methods" data-id="${esc(m.id)}">
+      <input class="input" value="${esc(m.name)}" maxlength="40" aria-label="Naziv načina plaćanja">
+      <span class="count">${um.get(m.id) || 0}×</span>
+      <button class="btn sm ghost danger" type="button" data-del>Obriši</button></div>`).join("");
+    const cur = $("#st-cur", v); if (document.activeElement !== cur) cur.value = S.config.currency;
+    $("#st-where", v).textContent = S.mode === "db"
+      ? `Troškovi se čuvaju uz ovu stranicu i vidiš ih sa svakog uređaja. Ukupno: ${S.expenses.length} troškova, ${S.subs.length} pretplata.`
+      : `Troškovi se čuvaju samo u ovom browseru. Ukupno: ${S.expenses.length} troškova, ${S.subs.length} pretplata.`;
+  }
+};
+
+/* ---------- Dialogs ---------- */
+const dlg = $("#dlg");
+function openDialog(html, onMount) {
+  dlg.innerHTML = html;
+  try { dlg.showModal(); } catch (e) { dlg.setAttribute("open", ""); }
+  onMount && onMount(dlg);
+}
+function closeDialog() { try { dlg.close(); } catch (e) { dlg.removeAttribute("open"); } }
+dlg.addEventListener("click", e => { if (e.target === dlg) closeDialog(); });
+
+function pickHTML(name, list, val, withDot) {
+  return `<div class="pick" data-pick="${name}">${list.map(o => `<button type="button" data-v="${esc(o.id)}" aria-pressed="${o.id === val}">${withDot ? `<i class="dot" style="background:${esc(o.color)}"></i>` : ""}${esc(o.name)}</button>`).join("")}</div>`;
+}
+function wirePick(root) {
+  $$("[data-pick]", root).forEach(p => p.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    $$("button", p).forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  }));
+}
+const picked = (root, name) => { const b = $(`[data-pick="${name}"] [aria-pressed="true"]`, root); return b ? b.dataset.v : ""; };
+function lastUsed(key, fallback) {
+  const s = [...S.expenses].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0];
+  return (s && s[key]) || fallback;
+}
+function parseAmount(s) { const v = Number(String(s).replace(/\s/g, "").replace(",", ".")); return isFinite(v) ? v : NaN; }
+
+function openExpense(e) {
+  if (S.readOnly) { toast("Nemaš dozvolu da menjaš ove podatke."); return; }
+  if (S.mode === "loading") return;
+  const isNew = !e;
+  const x = e || { date: today(), category: "", method: lastUsed("method", S.config.methods[0] && S.config.methods[0].id) };
+  openDialog(`<form class="dlg" id="ex-form" novalidate>
+    <h2>${isNew ? "Novi trošak" : "Izmeni trošak"}</h2>
+    <label class="field"><span>Iznos (${esc(S.config.currency)})</span><input class="input amount-input" id="ex-amount" inputmode="decimal" autocomplete="off" placeholder="0" value="${x.amount != null ? esc(String(x.amount).replace(".", ",")) : ""}"></label>
+    <label class="field"><span>Opis</span><input class="input" id="ex-title" maxlength="80" placeholder="npr. Termin za mali fudbal" value="${esc(x.title || "")}"></label>
+    <div class="field"><span>Kategorija</span>${pickHTML("cat", S.config.categories, x.category, true)}</div>
+    <div class="field"><span>Čime je plaćeno</span>${pickHTML("method", S.config.methods, x.method)}</div>
+    <div class="two">
+      <label class="field"><span>Datum</span><input class="input" id="ex-date" type="date" value="${esc(x.date)}"></label>
+      <label class="field"><span>Napomena</span><input class="input" id="ex-note" maxlength="140" placeholder="opciono" value="${esc(x.note || "")}"></label>
+    </div>
+    <div class="err" id="ex-err"></div>
+    <div class="foot">
+      ${isNew ? "" : `<button class="btn danger left" type="button" id="ex-del">Obriši</button>`}
+      <button class="btn ghost" type="button" id="ex-cancel">Otkaži</button>
+      <button class="btn primary" type="submit">${isNew ? "Dodaj trošak" : "Sačuvaj"}</button>
+    </div>
+  </form>`, root => {
+    wirePick(root);
+    setTimeout(() => $("#ex-amount", root).focus(), 30);
+    $("#ex-cancel", root).onclick = closeDialog;
+    const del = $("#ex-del", root);
+    if (del) del.onclick = async () => {
+      if (!del.classList.contains("armed")) { del.classList.add("armed"); del.textContent = "Potvrdi brisanje"; return; }
+      closeDialog();
+      const ok = await store.delExpense(e.id);
+      if (ok) toast("Trošak je obrisan.", { label: "Vrati", fn: () => store.putExpense(e) });
+    };
+    $("#ex-form", root).addEventListener("submit", async ev => {
+      ev.preventDefault();
+      const amount = parseAmount($("#ex-amount", root).value);
+      const category = picked(root, "cat");
+      const err = $("#ex-err", root);
+      if (!(amount > 0)) { err.textContent = "Upiši iznos veći od nule."; $("#ex-amount", root).focus(); return; }
+      if (!category) { err.textContent = "Izaberi kategoriju."; return; }
+      const date = $("#ex-date", root).value || today();
+      const rec = { ...(e || {}), id: e ? e.id : uid(), amount: Math.round(amount * 100) / 100, title: $("#ex-title", root).value.trim(), category, method: picked(root, "method"), date, note: $("#ex-note", root).value.trim(), createdAt: e && e.createdAt ? e.createdAt : Date.now() };
+      if (!rec.subId) delete rec.subId;
+      closeDialog();
+      const ok = await store.putExpense(rec);
+      if (ok) toast(isNew ? `Dodato: ${money(rec.amount, { round: true })} · ${catById(category).name}` : "Izmene su sačuvane.");
+    });
+  });
+}
+
+function openSub(s) {
+  if (S.readOnly) { toast("Nemaš dozvolu da menjaš ove podatke."); return; }
+  const isNew = !s;
+  const x = s || { cycle: "mesecno", category: "pretplate", nextDate: today(), active: true, method: S.config.methods[1] ? S.config.methods[1].id : "" };
+  openDialog(`<form class="dlg" id="sb-form" novalidate>
+    <h2>${isNew ? "Nova pretplata" : "Izmeni pretplatu"}</h2>
+    <label class="field"><span>Naziv</span><input class="input" id="sb-name" maxlength="60" placeholder="npr. Spotify, teretana, članarina" value="${esc(x.name || "")}"></label>
+    <div class="two">
+      <label class="field"><span>Iznos (${esc(S.config.currency)})</span><input class="input" id="sb-amount" inputmode="decimal" placeholder="0" value="${x.amount != null ? esc(String(x.amount).replace(".", ",")) : ""}"></label>
+      <label class="field"><span>Naplaćuje se</span><select class="input" id="sb-cycle">${Object.entries(CYCLES).map(([k, l]) => `<option value="${k}"${k === x.cycle ? " selected" : ""}>${l}</option>`).join("")}</select></label>
+    </div>
+    <label class="field"><span>Sledeća naplata</span><input class="input" id="sb-next" type="date" value="${esc(x.nextDate || "")}"></label>
+    <div class="field"><span>Kategorija</span>${pickHTML("cat", S.config.categories, x.category, true)}</div>
+    <div class="field"><span>Čime se plaća</span>${pickHTML("method", S.config.methods, x.method)}</div>
+    <label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="sb-active"${x.active !== false ? " checked" : ""}> Aktivna</label>
+    <div class="err" id="sb-err"></div>
+    <div class="foot">
+      ${isNew ? "" : `<button class="btn danger left" type="button" id="sb-del">Obriši</button>`}
+      <button class="btn ghost" type="button" id="sb-cancel">Otkaži</button>
+      <button class="btn primary" type="submit">${isNew ? "Dodaj pretplatu" : "Sačuvaj"}</button>
+    </div>
+  </form>`, root => {
+    wirePick(root);
+    setTimeout(() => $("#sb-name", root).focus(), 30);
+    $("#sb-cancel", root).onclick = closeDialog;
+    const del = $("#sb-del", root);
+    if (del) del.onclick = async () => {
+      if (!del.classList.contains("armed")) { del.classList.add("armed"); del.textContent = "Potvrdi brisanje"; return; }
+      closeDialog();
+      const ok = await store.delSub(s.id);
+      if (ok) toast("Pretplata je obrisana. Zabeleženi troškovi ostaju.", { label: "Vrati", fn: () => store.putSub(s) });
+    };
+    $("#sb-form", root).addEventListener("submit", async ev => {
+      ev.preventDefault();
+      const name = $("#sb-name", root).value.trim();
+      const amount = parseAmount($("#sb-amount", root).value);
+      const err = $("#sb-err", root);
+      if (!name) { err.textContent = "Upiši naziv pretplate."; return; }
+      if (!(amount > 0)) { err.textContent = "Upiši iznos veći od nule."; return; }
+      const rec = { ...(s || {}), id: s ? s.id : uid(), name, amount: Math.round(amount * 100) / 100, cycle: $("#sb-cycle", root).value, nextDate: $("#sb-next", root).value || today(), category: picked(root, "cat") || "pretplate", method: picked(root, "method"), active: $("#sb-active", root).checked, createdAt: s && s.createdAt ? s.createdAt : Date.now() };
+      closeDialog();
+      const ok = await store.putSub(rec);
+      if (ok) toast(isNew ? `Pretplata ${name} je dodata.` : "Izmene su sačuvane.");
+    });
+  });
+}
+
+/* ---------- Local examples (only when running outside the artifact viewer) ---------- */
+function loadLocalExamples() {
+  const t = today();
+  const rows = [
+    [0, 900, "Termin mali fudbal", "fudbal", "gotovina"], [-1, 1450, "Pica sa društvom", "izlazak", "debitna"], [-1, 320, "Gradski prevoz", "prevoz", "telefon"],
+    [-2, 680, "Užina i sok", "hrana", "gotovina"], [-3, 2400, "Fotokopije i sveske", "skola", "debitna"], [-4, 3200, "Izlazak, klub", "izlazak", "gotovina"],
+    [-5, 900, "Termin mali fudbal", "fudbal", "gotovina"], [-6, 5490, "Kopačke na popustu", "fudbal", "kreditna"], [-8, 1100, "Burger", "hrana", "telefon"],
+    [-9, 750, "Bioskop", "izlazak", "debitna"], [-10, 900, "Termin mali fudbal", "fudbal", "gotovina"], [-12, 4200, "Duks", "odeca", "debitna"],
+    [-14, 1800, "Knjiga za lektiru", "skola", "ips"], [-15, 560, "Taksi", "prevoz", "gotovina"], [-17, 2100, "Rođendan druga", "izlazak", "gotovina"],
+    [-20, 900, "Termin mali fudbal", "fudbal", "gotovina"], [-22, 1300, "Doručak u gradu", "hrana", "telefon"], [-26, 2600, "Ekskurzija, rata", "skola", "ips"],
+    [-31, 900, "Termin mali fudbal", "fudbal", "gotovina"], [-35, 2900, "Koncert", "izlazak", "debitna"], [-40, 1500, "Namirnice", "hrana", "debitna"],
+    [-48, 3800, "Patike", "odeca", "kreditna"], [-55, 900, "Termin mali fudbal", "fudbal", "gotovina"], [-62, 2200, "Izlazak", "izlazak", "gotovina"],
+    [-70, 3100, "Udžbenici", "skola", "debitna"], [-85, 1800, "Hrana, nedelja", "hrana", "debitna"], [-95, 4500, "Dres", "fudbal", "kreditna"],
+    [-110, 2500, "Leto, izlazak", "izlazak", "gotovina"], [-125, 1600, "Hrana", "hrana", "debitna"], [-140, 900, "Termin mali fudbal", "fudbal", "gotovina"]
+  ];
+  let n = 0;
+  S.expenses = rows.map(([d, amount, title, category, method]) => ({ id: uid(), date: addDays(t, d), amount, title, category, method, note: "", example: true, createdAt: Date.now() - (n++) * 1000 }));
+  S.subs = [
+    { id: uid(), name: "Spotify", amount: 599, cycle: "mesecno", nextDate: addDays(t, 3), category: "pretplate", method: "debitna", active: true, example: true },
+    { id: uid(), name: "Članarina fudbal", amount: 3000, cycle: "mesecno", nextDate: addDays(t, -1), category: "fudbal", method: "gotovina", active: true, example: true },
+    { id: uid(), name: "iCloud 50 GB", amount: 119, cycle: "mesecno", nextDate: addDays(t, 12), category: "pretplate", method: "kreditna", active: true, example: true }
+  ];
+  localSave();
+  renderTab();
+}
+
+boot();
+})();
+</script>
+</body>
+</html>
