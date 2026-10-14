@@ -198,11 +198,11 @@ main { padding-block: 20px 60px; }
 .mini-item .a { grid-row: 1 / span 2; grid-column: 2; font-weight: 700; text-align: right; white-space: nowrap; }
 
 /* Filter bar */
-.filters { display: grid; grid-template-columns: minmax(180px, 2fr) repeat(4, minmax(130px, 1fr)); gap: 10px; align-items: end; }
+.filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; align-items: end; }
 .filters .range { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .filters-2 { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; margin-top: 10px; }
 .filters-2 .field { width: 150px; }
-@media (max-width: 1000px) { .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } .filters .search { grid-column: 1 / -1; } }
+@media (max-width: 900px) { .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 480px) { .filters-2 .field { width: calc(50% - 5px); } }
 
 .summary-line { display: flex; align-items: center; gap: 10px 18px; flex-wrap: wrap; padding: 12px 0 4px; color: var(--ink-2); }
@@ -295,6 +295,50 @@ dialog::backdrop { background: rgba(0, 0, 0, .55); }
 .toast button { background: transparent; border: 0; color: var(--accent-soft); font-weight: 700; cursor: pointer; text-decoration: underline; }
 
 .loading { padding: 60px 16px; text-align: center; color: var(--muted); }
+
+/* Filters collapse behind a toggle on phones */
+.frow { display: flex; gap: 10px; align-items: end; margin-bottom: 10px; }
+.frow .search { flex: 1; }
+.f-toggle { display: none; }
+
+/* Tab icons appear only in the phone bottom bar */
+.tab-ico { display: none; }
+.tab-ico svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Phone */
+@media (max-width: 640px) {
+  .top { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--bg); }
+  .top-row { padding-block: 10px; }
+  .brand h1 { font-size: 22px; }
+  .brand .sub, .mode span { display: none; }
+  .tabs {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0;
+    background: var(--surface); border-top: 1px solid var(--line);
+    padding: 6px 2px calc(6px + env(safe-area-inset-bottom, 0px)); overflow: visible;
+  }
+  .tab { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 2px 0; border-radius: 0; font-size: 11px; color: var(--muted); min-width: 0; }
+  .tab > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .tab:hover, .tab[aria-selected="true"] { background: transparent; }
+  .tab[aria-selected="true"] { color: var(--ink); }
+  .tab-ico { display: grid; place-items: center; width: 48px; height: 28px; border-radius: 999px; transition: background .15s; }
+  .tab[aria-selected="true"] .tab-ico { background: var(--ink); color: var(--bg); }
+  main { padding-block: 14px calc(96px + env(safe-area-inset-bottom, 0px)); }
+  .view { gap: 12px; }
+  .panel { padding: 16px 14px; }
+  .kpis { gap: 10px; }
+  .kpi { padding: 12px 13px; }
+  .toast { bottom: calc(86px + env(safe-area-inset-bottom, 0px)); }
+  /* 16px stops iOS from zooming into focused fields */
+  .input, select.input, textarea.input { font-size: 16px; }
+  .f-toggle { display: inline-flex; min-height: 44px; }
+  .fpanel:not(.open) .adv { display: none; }
+  .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pick button { padding: 8px 13px 8px 11px; font-size: 14px; }
+  dialog { width: 100vw; max-width: 100vw; margin: auto 0 0; border-radius: 20px 20px 0 0; max-height: 92dvh; overflow: auto; border-bottom: 0; }
+  .dlg { padding: 20px 16px calc(20px + env(safe-area-inset-bottom, 0px)); }
+  .dlg .foot .btn { min-height: 44px; }
+}
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
 </style>
 </head>
@@ -315,11 +359,11 @@ dialog::backdrop { background: rgba(0, 0, 0, .55); }
       </button>
     </div>
     <nav class="tabs" role="tablist" id="tabs">
-      <button class="tab" role="tab" data-tab="pregled">Pregled</button>
-      <button class="tab" role="tab" data-tab="troskovi">Troškovi</button>
-      <button class="tab" role="tab" data-tab="pretplate">Pretplate</button>
-      <button class="tab" role="tab" data-tab="recap">Recap</button>
-      <button class="tab" role="tab" data-tab="podesavanja">Podešavanja</button>
+      <button class="tab" role="tab" data-tab="pregled"><span class="tab-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20h-5v-5.5H9V20H4z"/></svg></span><span>Pregled</span></button>
+      <button class="tab" role="tab" data-tab="troskovi"><span class="tab-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 6.5h12M8 12h12M8 17.5h12M4 6.5h.01M4 12h.01M4 17.5h.01"/></svg></span><span>Troškovi</span></button>
+      <button class="tab" role="tab" data-tab="pretplate"><span class="tab-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.5M20 4v4.5h-4.5M20 12a8 8 0 0 1-13.7 5.6L4 15.5M4 20v-4.5h4.5"/></svg></span><span>Pretplate</span></button>
+      <button class="tab" role="tab" data-tab="recap"><span class="tab-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 20V12M10 20V6M15 20v-9M20 20V4"/></svg></span><span>Recap</span></button>
+      <button class="tab" role="tab" data-tab="podesavanja"><span class="tab-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8M16 4.5v5M10 14.5v5"/></svg></span><span>Podešavanja</span></button>
     </nav>
   </div>
 </header>
@@ -747,6 +791,9 @@ function barsHTML(rows, total, kind, prevMap) {
   }).join("")}</div>`;
 }
 /* Axis max = 4 round steps, so every gridline lands on a readable number */
+const isNarrow = () => window.innerWidth <= 640;
+let wasNarrow = isNarrow();
+window.addEventListener("resize", () => { if (isNarrow() !== wasNarrow) { wasNarrow = isNarrow(); refresh(); } });
 function niceMax(v) {
   if (v <= 0) return 1000;
   const raw = v / 4;
@@ -761,7 +808,8 @@ function shortMoney(v) {
 }
 /* Stacked (by category) or plain vertical bars. cols: [{label, total, parts:[[catId,val]], current, title}] */
 function barChart(cols, opts = {}) {
-  const W = 640, H = opts.h || 220, padL = 40, padR = 6, padT = 22, padB = 26;
+  // A narrower drawing on phones keeps axis text close to its real pixel size
+  const W = isNarrow() ? 330 : 640, H = (opts.h || 220) * (isNarrow() ? 0.82 : 1), padL = isNarrow() ? 34 : 40, padR = 6, padT = 22, padB = 26;
   const innerW = W - padL - padR, innerH = H - padT - padB;
   const max = niceMax(Math.max(...cols.map(c => c.total), 0));
   const y = v => padT + innerH - v / max * innerH;
@@ -997,9 +1045,13 @@ function opts(list, val, allLabel) { return (allLabel ? `<option value="">${esc(
 VIEWS.troskovi = {
   shell(v) {
     const f = S.filters;
-    v.innerHTML = `<section class="panel">
-      <div class="filters">
+    v.innerHTML = `<section class="panel fpanel" id="f-panel">
+      <div class="frow">
         <label class="field search"><span>Pretraga</span><input class="input" id="f-q" type="search" placeholder="Opis, napomena, kategorija…" value="${esc(f.q)}"></label>
+        <button class="btn f-toggle" type="button" id="f-toggle" aria-expanded="false" aria-controls="f-adv">Filteri</button>
+      </div>
+      <div class="adv" id="f-adv">
+      <div class="filters">
         <label class="field"><span>Kategorija</span><select class="input" id="f-cat"></select></label>
         <label class="field"><span>Način plaćanja</span><select class="input" id="f-method"></select></label>
         <label class="field"><span>Period</span><select class="input" id="f-period">${PERIODS.map(([k, l]) => `<option value="${k}"${k === f.period ? " selected" : ""}>${l}</option>`).join("")}</select></label>
@@ -1013,6 +1065,7 @@ VIEWS.troskovi = {
         <button class="btn ghost" type="button" id="f-reset">Poništi filtere</button>
         <span style="flex:1"></span>
         <button class="btn" type="button" id="f-export" title="Preuzmi filtrirane troškove kao CSV">Izvezi CSV</button>
+      </div>
       </div>
       <div class="summary-line" id="t-summary"></div>
     </section>
@@ -1029,6 +1082,10 @@ VIEWS.troskovi = {
     $("#f-sort", v).addEventListener("change", e => { const [k, d] = e.target.value.split(":"); S.sort = { key: k, dir: d }; this.update(v); });
     $("#f-reset", v).addEventListener("click", () => { S.filters = { q: "", cat: "", method: "", period: "all", from: "", to: "", min: "", max: "" }; S.sort = { key: "date", dir: "desc" }; renderTab(); });
     $("#f-export", v).addEventListener("click", exportCSV);
+    $("#f-toggle", v).addEventListener("click", e => {
+      const open = $("#f-panel", v).classList.toggle("open");
+      e.currentTarget.setAttribute("aria-expanded", String(open));
+    });
     v.addEventListener("click", e => {
       const h = e.target.closest("[data-sort]"); if (!h) return;
       const k = h.dataset.sort;
@@ -1053,6 +1110,8 @@ VIEWS.troskovi = {
       ${list.length ? `<span>prosek ${money(tot / list.length, { round: true })} po trošku</span>` : ""}
       ${days && days > 0 ? `<span>${money(tot / days, { round: true })} po danu</span>` : ""}
       ${active ? `<span class="tag">${active} ${active === 1 ? "filter" : "filtera"}</span>` : ""}`;
+    const fq = f.q ? 1 : 0;
+    $("#f-toggle", v).textContent = active - fq ? `Filteri · ${active - fq}` : "Filteri";
 
     const arrow = k => S.sort.key === k ? (S.sort.dir === "asc" ? "↑" : "↓") : "";
     const hb = (k, label, cls = "") => `<button type="button" data-sort="${k}" class="${S.sort.key === k ? "on" : ""} ${cls}">${label} ${arrow(k)}</button>`;
@@ -1260,7 +1319,7 @@ VIEWS.recap = {
       const parts = groupSum(list.filter(e => e.date === d), "category").reverse();
       cols.push({ label: type === "week" ? fmtWeekday(d) : String(parseD(d).getDate()), title: fmtDayLong(d), total: dayMap.get(d) || 0, parts, current: d === maxDay });
     }
-    const chart = barChart(cols, { aria: "Troškovi po danima", labelEvery: type === "week" ? 1 : 3, totals: type === "week", maxBar: type === "week" ? 52 : 14, h: type === "week" ? 220 : 200 });
+    const chart = barChart(cols, { aria: "Troškovi po danima", labelEvery: type === "week" ? 1 : isNarrow() ? 5 : 3, totals: type === "week", maxBar: type === "week" ? 52 : 14, h: type === "week" ? 220 : 200 });
 
     const top5 = [...list].sort((a, b) => b.amount - a.amount).slice(0, 5);
     $("#rc-body", v).innerHTML = `
